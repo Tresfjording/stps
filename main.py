@@ -1,11 +1,3 @@
-
-cursor.execute("DELETE FROM tips;")
-cursor.execute("DELETE FROM matches;")
-cursor.execute("DELETE FROM players;")
-cursor.execute("DELETE FROM weeks;")
-conn.commit()
-
-
 print("JEG ER HER!!!")
 import sqlite3
 import os
@@ -34,6 +26,14 @@ print("Schema path:", schema_path)
 
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
+
+# Rydd databasen før vi fyller på nytt
+cursor.execute("DELETE FROM tips;")
+cursor.execute("DELETE FROM matches;")
+cursor.execute("DELETE FROM players;")
+cursor.execute("DELETE FROM weeks;")
+conn.commit()
+
 
 with open(schema_path, "r") as f:
     sql_script = f.read()
