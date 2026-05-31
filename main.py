@@ -435,22 +435,20 @@ df_history = df_total.copy()   # enkel versjon nå
 # -------------------
 
 with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
+
+    # ✅ ALLTID skriv dette først
     df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
-    df_history.to_excel(writer, sheet_name="Historikk", index=False)
 
+    # ✅ Historikk
+    if 'df_history' in locals():
+        df_history.to_excel(writer, sheet_name="Historikk", index=False)
 
-    # ✅ Én fane per spiller
+    # ✅ Spillere
     for player in df_total["Navn"]:
         df_player = df_total[df_total["Navn"] == player]
         df_player.to_excel(writer, sheet_name=player[:31], index=False)
 
-    # ✅ Auto kolonnebredde
-    for sheet in writer.sheets.values():
-        for column_cells in sheet.columns:
-            length = max(len(str(cell.value)) for cell in column_cells if cell.value)
-            sheet.column_dimensions[column_cells[0].column_letter].width = length + 2
-df_total.insert(0, "Plass", range(1, len(df_total)+1))
-print("✅ Excel DELUXE nivå 2 ferdig!")
+print("✅ Excel reddet!")
 
     # --- HISTORIKK ---
 cursor.execute("""
