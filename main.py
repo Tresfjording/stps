@@ -402,19 +402,52 @@ print("Unike rader:", len(unique_rows))
 # --- HISTORIKK ---
 with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
 
-    # ✅ 1. Sammenlagt
-    df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
+import pandas as pd
+
+# -------------------
+# Sammenlagt (leaderboard)
+# -------------------
+data = []
+for player_id in totals:
+    data.append([
+        player_map[player_id],
+        totals[player_id],
+        correct[player_id]
+    ])
+
+df_total = pd.DataFrame(data, columns=["Navn", "Poeng", "Rette"])
+
+# 🔥 sorter best først
 df_total = df_total.sort_values(by="Poeng", ascending=False)
 
-    # ✅ 2. Historikk
-df_history.to_excel(writer, sheet_name="Historikk", index=False)
+# -------------------
+# Historikk
+# -------------------
+df_history = df_total.copy()   # enkel versjon nå
 
-    # ✅ 3. Ett ark per spiller
-for player in df_history["Navn"].unique():
-        df_player = df_history[df_history["Navn"] == player]
+# -------------------
+# Excel
+# -------------------
+with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
+
+    # ✅ Sammenlagt
+    df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
+
+    # ✅ Historikk
+    df_history.to_excel(writer, sheet_name="Historikk", index=False)
+
+    # ✅ Én fane per spiller
+    for player in df_total["Navn"]:
+        df_player = df_total[df_total["Navn"] == player]
         df_player.to_excel(writer, sheet_name=player[:31], index=False)
 
-print("✅ Excel DELUXE laget!")
+    # ✅ Auto kolonnebredde
+    for sheet in writer.sheets.values():
+        for column_cells in sheet.columns:
+            length = max(len(str(cell.value)) for cell in column_cells if cell.value)
+            sheet.column_dimensions[column_cells[0].column_letter].width = length + 2
+df_total.insert(0, "Plass", range(1, len(df_total)+1))
+print("✅ Excel DELUXE nivå 2 ferdig!")
 
     # --- HISTORIKK ---
 cursor.execute("""
