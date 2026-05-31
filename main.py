@@ -168,12 +168,6 @@ conn.commit()
 cursor.execute("SELECT id FROM players WHERE name = ?", ("AHH",))
 player_id = cursor.fetchone()[0]
 
-
-# --- HENT RIKTIG WEEK_ID ---
-#---cursor.execute("SELECT id FROM weeks WHERE week_number = ?", (2,))---
-#---week_id = cursor.fetchone()[0]---
-
-
 # Legg inn tips for 4 kamper
 for match_number in range(1, 5):
     cursor.execute("""
@@ -203,9 +197,24 @@ conn.commit()
 
 
 # --- SÅ henter du tips + resultater ---
-JOIN matches m
-ON t.week_id = m.week_id
-AND t.match_number = m.match_number
+
+
+cursor.execute("""
+SELECT 
+    t.player_id,
+    t.h_percent,
+    t.u_percent,
+    t.b_percent,
+    m.result
+FROM tips t
+JOIN matches m 
+  ON t.week_id = m.week_id
+ AND t.match_number = m.match_number
+WHERE t.week_id = ?
+""", (week_id,))
+
+
+
 
 rows = cursor.fetchall()
 
@@ -351,22 +360,10 @@ winner_name = player_names[winner_id]
 
 print(f"\n🏆 Vinner uke {week_id}: {winner_name} med {winner_points} poeng!")
 
-cursor.execute("""
-SELECT 
-    p.name,
-    SUM(r.total_points) as total,
-    SUM(r.correct) as total_correct
-FROM weekly_results r
-JOIN players p ON r.player_id = p.id
-GROUP BY p.name
-ORDER BY total DESC, total_correct DESC
-""")
+
 
 for row in cursor.fetchall():
     print(row)
-
-
-
 
 cursor.execute("""
 SELECT 
