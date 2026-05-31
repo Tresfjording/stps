@@ -478,26 +478,28 @@ for player in df_hist["Navn"].unique():
         df_player.to_excel(writer, sheet_name=player, index=False)
 
 print("✅ Excel med flere ark laget!")
-
 import pandas as pd
 
 print("Starter Excel...")
 
-try:
-    writer = pd.ExcelWriter("tippelag.xlsx", engine="openpyxl")
+writer = pd.ExcelWriter("tippelag.xlsx", engine="openpyxl")
 
-    print("Skriver Sammenlagt...")
-    df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
+print("Skriver Sammenlagt...")
+df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
 
-    print("Skriver spillere...")
-    for player in df_total["Navn"].dropna().unique():
-        print(" →", player)
-        df_player = df_total[df_total["Navn"] == player]
-        df_player.to_excel(writer, sheet_name=str(player)[:31], index=False)
+print("Skriver spillere...")
+for player in df_total["Navn"].dropna().unique():
+    print("→", player)
 
-    writer.close()
-    print("✅ Excel OK!")
+    sheet_name = str(player)
+    sheet_name = sheet_name.replace("/", "").replace("\\", "").replace(":", "")[:31]
 
-except Exception as e:
-    print("❌ EKTE FEIL:")
-    print(e)
+    df_player = df_total[df_total["Navn"] == player]
+
+    if not df_player.empty:
+        df_player.to_excel(writer, sheet_name=sheet_name, index=False)
+
+print("Lagrer fil...")
+writer.save()
+
+print("✅ Excel ER FERDIG!")
