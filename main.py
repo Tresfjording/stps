@@ -414,6 +414,8 @@ df.to_excel("tippelag.xlsx", sheet_name="Sammenlagt", index=False)
 unique_rows = set(rows)
 print("Unike rader:", len(unique_rows))
 
+df_total = df_total.sort_values(by="Poeng", ascending=False)
+
 # --- HISTORIKK ---
 import pandas as pd
 
@@ -460,6 +462,9 @@ chart = BarChart()
 chart.title = "Poeng per spiller"
 chart.y_axis.title = "Poeng"
 chart.x_axis.title = "Spiller"
+chart.height = 10
+chart.width = 20
+
 
 chart.add_data(data, titles_from_data=True)
 chart.set_categories(categories)
