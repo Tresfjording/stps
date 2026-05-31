@@ -375,7 +375,14 @@ for i, row in enumerate(cursor.fetchall(), start=1):
 
 
 rows = cursor.fetchall()
+data = []
 
+for player_id in totals:
+    data.append([
+        player_map[player_id],
+        totals[player_id],
+        correct[player_id]
+    ])
 
 # hent data én gang
 cursor.execute("""
@@ -391,14 +398,7 @@ ORDER BY total DESC, total_correct DESC
 rows = cursor.fetchall()
 
 print("\nSAMMENLAGT:")
-data = []
 
-for player_id in totals:
-    data.append([
-        player_map[player_id],
-        totals[player_id],
-        correct[player_id]
-    ])
 
 df_total = pd.DataFrame(data, columns=["Navn", "Poeng", "Rette"])
 for i, (name, total, correct) in enumerate(rows, start=1):
