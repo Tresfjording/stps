@@ -462,8 +462,8 @@ columns = ["Navn"] + [f"K{i}" for i in range(1, kamp_antall + 1)] + ["Sum"]
 df_kupong = pd.DataFrame(kupong_data, columns=columns)
 
 
-#---df_pivot = df_kupong.set_index("Navn").T.reset_index()---
-#---df_pivot.rename(columns={"index": "Kamp"}, inplace=True)---
+df_pivot = df_kupong.set_index("Navn").T.reset_index()
+df_pivot.rename(columns={"index": "Kamp"}, inplace=True)
 
 
 df_kupong.to_excel(writer, sheet_name="Kuponger", index=False)
