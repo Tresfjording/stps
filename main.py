@@ -421,38 +421,11 @@ df.to_excel("tippelag.xlsx", sheet_name="Sammenlagt", index=False)
 unique_rows = set(rows)
 print("Unike rader:", len(unique_rows))
 
-# --- hISTORIKK ---
-with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
-
-    # Sammenlagt
-    df.to_excel(writer, sheet_name="Sammenlagt", index=False)
-
-    # Historikk
-    cursor.execute("""
-    SELECT 
-        p.name,
-        w.week_number,
-        r.total_points,
-        r.correct
-    FROM weekly_results r
-    JOIN players p ON r.player_id = p.id
-    JOIN weeks w ON r.week_id = w.id
-    ORDER BY p.name, w.week_number
-    """)
-
-    df_hist = pd.DataFrame(
-        cursor.fetchall(),
-        columns=["Navn", "Uke", "Poeng", "Rette"]
-    )
-
-    df_hist.to_excel(writer, sheet_name="Historikk", index=False)
-
-    import pandas as pd
-
+# --- HISTORIKK ---
 with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
 
     # --- SAMMENLAGT ---
-    df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
+    df.to_excel(writer, sheet_name="Sammenlagt", index=False)
 
     # --- HISTORIKK ---
     cursor.execute("""
@@ -466,9 +439,8 @@ with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
     JOIN weeks w ON r.week_id = w.id
     ORDER BY p.name, w.week_number
     """)
-    
-    rows = cursor.fetchall()
 
+    rows = cursor.fetchall()
     df_hist = pd.DataFrame(rows, columns=["Navn", "Uke", "Poeng", "Rette"])
     df_hist.to_excel(writer, sheet_name="Historikk", index=False)
 
