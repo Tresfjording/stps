@@ -441,27 +441,19 @@ df_safe = pd.DataFrame({"OK": ["OK"]})
 
 with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
 
-    try:
-        # ✅ Sammenlagt
+
+    with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
+
+    # ✅ Sammenlagt (må alltid finnes)
         df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
 
-        # ✅ Historikk (hvis finnes)
-        if 'df_history' in locals():
-            df_history.to_excel(writer, sheet_name="Historikk", index=False)
+    # ✅ Spillere (unik liste!)
+    for player in df_total["Navn"].dropna().unique():
+        df_player = df_total[df_total["Navn"] == player]
+        df_player.to_excel(writer, sheet_name=player[:31], index=False)
 
-        # ✅ Spiller-faner
-        for player in df_total["Navn"]:
-            df_player = df_total[df_total["Navn"] == player]
-            df_player.to_excel(writer, sheet_name=player[:31], index=False)
+print("✅ Excel ferdig uten crash!")
 
-    except Exception as e:
-        print("⚠️ Excel-feil:", e)
-
-        # 🔥 fallback – sørg for minst ett ark
-        df_safe.to_excel(writer, sheet_name="SAFE", index=False)
-
-print("✅ Excel skrevet ferdig")
-``
 
     # --- HISTORIKK ---
 cursor.execute("""
@@ -486,3 +478,26 @@ for player in df_hist["Navn"].unique():
         df_player.to_excel(writer, sheet_name=player, index=False)
 
 print("✅ Excel med flere ark laget!")
+
+import pandas as pd
+
+print("Starter Excel...")
+
+try:
+    writer = pd.ExcelWriter("tippelag.xlsx", engine="openpyxl")
+
+    print("Skriver Sammenlagt...")
+    df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
+
+    print("Skriver spillere...")
+    for player in df_total["Navn"].dropna().unique():
+        print(" →", player)
+        df_player = df_total[df_total["Navn"] == player]
+        df_player.to_excel(writer, sheet_name=str(player)[:31], index=False)
+
+    writer.close()
+    print("✅ Excel OK!")
+
+except Exception as e:
+    print("❌ EKTE FEIL:")
+    print(e)
