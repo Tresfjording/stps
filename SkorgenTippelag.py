@@ -1,3 +1,10 @@
+
+import os
+
+print("📁 Working dir:", os.getcwd())
+print("📂 Innhold:", os.listdir())
+
+
 import pandas as pd
 
 file = "SkorgenTippelag.xlsm"
