@@ -247,48 +247,20 @@ for row in rows:
         percent = b
         max_points = 65
 
-
-points = min(percent, max_points)
-
-print(f"Player {player_id} fikk {points} poeng")
+    points = min(percent, max_points)
+    print(f"Player {player_id} fikk {points} poeng")
 
     # --- SUM ---
-if player_id not in totals:
-        totals[player_id] = 0
-totals[player_id] += points
+    totals[player_id] = totals.get(player_id, 0) + points
 
     # --- RETTE ---
-if player_id not in correct:
-        correct[player_id] = 0
-
-if result == "H" and h > 0:
+    correct[player_id] = correct.get(player_id, 0)
+    if result == "H" and h > 0:
         correct[player_id] += 1
-elif result == "U" and u > 0:
+    elif result == "U" and u > 0:
         correct[player_id] += 1
-elif result == "B" and b > 0:
+    elif result == "B" and b > 0:
         correct[player_id] += 1
-
-
-    # --- SUM ---
-if player_id not in totals:
-        totals[player_id] = 0
-totals[player_id] += points
-
-    # --- RETTE ---
-if player_id not in correct:
-        correct[player_id] = 0
-
-if result == "H" and h > 0:
-        correct[player_id] += 1
-elif result == "U" and u > 0:
-        correct[player_id] += 1
-elif result == "B" and b > 0:
-        correct[player_id] += 1
-
-
-points = min(percent, max_points)
-
-print(f"Player {player_id} fikk {points} poeng")
 
 for player_id, total in totals.items():
     correct_count = correct[player_id]
@@ -308,23 +280,6 @@ for player_id, total in totals.items():
     """, (player_id, week_id, total, correct_count, bonus))
 
 conn.commit()
-
-# --- SUM TOTAL ---
-if player_id not in totals:
-        totals[player_id] = 0
-
-totals[player_id] += points
-
-    # --- TELLE RETTE ---
-if player_id not in correct:
-        correct[player_id] = 0
-
-if result == "H" and h > 0:
-        correct[player_id] += 1
-elif result == "U" and u > 0:
-        correct[player_id] += 1
-elif result == "B" and b > 0:
-        correct[player_id] += 1
 
 
 # --- DEBUG ---
