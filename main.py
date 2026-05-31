@@ -438,23 +438,6 @@ import pandas as pd
 
 # ✅ Sikkerhetskopi – minst ett ark MÅ skrives
 df_safe = pd.DataFrame({"OK": ["OK"]})
-
-with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
-
-
-    with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
-
-    # ✅ Sammenlagt (må alltid finnes)
-        df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
-
-    # ✅ Spillere (unik liste!)
-    for player in df_total["Navn"].dropna().unique():
-        df_player = df_total[df_total["Navn"] == player]
-        df_player.to_excel(writer, sheet_name=player[:31], index=False)
-
-print("✅ Excel ferdig uten crash!")
-
-
     # --- HISTORIKK ---
 cursor.execute("""
     SELECT 
