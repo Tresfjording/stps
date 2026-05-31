@@ -391,7 +391,16 @@ ORDER BY total DESC, total_correct DESC
 rows = cursor.fetchall()
 
 print("\nSAMMENLAGT:")
+data = []
 
+for player_id in totals:
+    data.append([
+        player_map[player_id],
+        totals[player_id],
+        correct[player_id]
+    ])
+
+df_total = pd.DataFrame(data, columns=["Navn", "Poeng", "Rette"])
 for i, (name, total, correct) in enumerate(rows, start=1):
     print(f"{i}. {name}: {total} poeng ({correct} rette)")
 
@@ -405,34 +414,6 @@ unique_rows = set(rows)
 print("Unike rader:", len(unique_rows))
 
 # --- HISTORIKK ---
-with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
-
-    import pandas as pd
-
-# -------------------
-# Sammenlagt (leaderboard)
-# -------------------
-data = []
-for player_id in totals:
-    data.append([
-        player_map[player_id],
-        totals[player_id],
-        correct[player_id]
-    ])
-
-df_total = pd.DataFrame(data, columns=["Navn", "Poeng", "Rette"])
-
-# 🔥 sorter best først
-df_total = df_total.sort_values(by="Poeng", ascending=False)
-
-# -------------------
-# Historikk
-# -------------------
-df_history = df_total.copy()   # enkel versjon nå
-
-# -------------------
-# Excel
-# -------------------
 import pandas as pd
 
 print("Starter Excel...")
