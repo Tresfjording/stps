@@ -446,6 +446,23 @@ df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
 
 # ✅ Historikk
 df_hist.to_excel(writer, sheet_name="Historikk", index=False)
+
+# ✅ KUPONG-ARK (input)
+players = df_total["Navn"].tolist()
+kamp_antall = 12
+
+kupong_data = []
+
+for p in players:
+    row = [p] + [""] * kamp_antall + [""]
+    kupong_data.append(row)
+
+columns = ["Navn"] + [f"K{i}" for i in range(1, kamp_antall + 1)] + ["Sum"]
+
+df_kupong = pd.DataFrame(kupong_data, columns=columns)
+
+df_kupong.to_excel(writer, sheet_name="Kuponger", index=False)
+
 from openpyxl.chart import BarChart, Reference
 
 # hent arket
