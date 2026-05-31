@@ -383,6 +383,7 @@ for player_id in totals:
         totals[player_id],
         correct[player_id]
     ])
+    df_total = pd.DataFrame(data, columns=["Navn", "Poeng", "Rette"])
 
 # hent data én gang
 cursor.execute("""
@@ -400,7 +401,7 @@ rows = cursor.fetchall()
 print("\nSAMMENLAGT:")
 
 
-df_total = pd.DataFrame(data, columns=["Navn", "Poeng", "Rette"])
+
 for i, (name, total, correct) in enumerate(rows, start=1):
     print(f"{i}. {name}: {total} poeng ({correct} rette)")
 
