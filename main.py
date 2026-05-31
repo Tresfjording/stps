@@ -453,6 +453,6 @@ for player in df_hist["Navn"].dropna().unique():
         df_player.to_excel(writer, sheet_name=sheet_name, index=False)
 
 # ✅ LAGRE PÅ SLUTT
-writer.save()
+writer.close()
 
 print("✅ Excel HELT OK!")
