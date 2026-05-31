@@ -429,12 +429,12 @@ cursor.execute("""
     ORDER BY p.name, w.week_number
     """)
 
-    rows = cursor.fetchall()
-    df_hist = pd.DataFrame(rows, columns=["Navn", "Uke", "Poeng", "Rette"])
-    df_hist.to_excel(writer, sheet_name="Historikk", index=False)
+rows = cursor.fetchall()
+df_hist = pd.DataFrame(rows, columns=["Navn", "Uke", "Poeng", "Rette"])
+df_hist.to_excel(writer, sheet_name="Historikk", index=False)
 
     # --- ÉN FANE PER SPILLER ---
-    for player in df_hist["Navn"].unique():
+for player in df_hist["Navn"].unique():
         df_player = df_hist[df_hist["Navn"] == player]
         df_player.to_excel(writer, sheet_name=player, index=False)
 
