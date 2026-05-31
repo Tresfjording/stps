@@ -433,12 +433,11 @@ df_history = df_total.copy()   # enkel versjon nå
 # -------------------
 # Excel
 # -------------------
-
 import pandas as pd
 
-# ✅ Sikkerhetskopi – minst ett ark MÅ skrives
-df_safe = pd.DataFrame({"OK": ["OK"]})
-    # --- HISTORIKK ---
+print("Starter Excel...")
+
+# --- HISTORIKK FRA DB ---
 cursor.execute("""
     SELECT 
         p.name,
@@ -449,40 +448,29 @@ cursor.execute("""
     JOIN players p ON r.player_id = p.id
     JOIN weeks w ON r.week_id = w.id
     ORDER BY p.name, w.week_number
-    """)
+""")
 
 rows = cursor.fetchall()
 df_hist = pd.DataFrame(rows, columns=["Navn", "Uke", "Poeng", "Rette"])
-df_hist.to_excel(writer, sheet_name="Historikk", index=False)
 
-    # --- ÉN FANE PER SPILLER ---
-for player in df_hist["Navn"].unique():
-        df_player = df_hist[df_hist["Navn"] == player]
-        df_player.to_excel(writer, sheet_name=player, index=False)
-
-print("✅ Excel med flere ark laget!")
-import pandas as pd
-
-print("Starter Excel...")
-
+# --- START WRITER ---
 writer = pd.ExcelWriter("tippelag.xlsx", engine="openpyxl")
 
-print("Skriver Sammenlagt...")
+# ✅ Sammenlagt
 df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
 
-print("Skriver spillere...")
-for player in df_total["Navn"].dropna().unique():
-    print("→", player)
+# ✅ Historikk
+df_hist.to_excel(writer, sheet_name="Historikk", index=False)
 
-    sheet_name = str(player)
-    sheet_name = sheet_name.replace("/", "").replace("\\", "").replace(":", "")[:31]
-
-    df_player = df_total[df_total["Navn"] == player]
+# ✅ Én fane per spiller (fra historikk)
+for player in df_hist["Navn"].dropna().unique():
+    sheet_name = str(player).replace("/", "").replace("\\", "").replace(":", "")[:31]
+    df_player = df_hist[df_hist["Navn"] == player]
 
     if not df_player.empty:
         df_player.to_excel(writer, sheet_name=sheet_name, index=False)
 
-print("Lagrer fil...")
+# ✅ LAGRE
 writer.save()
 
-print("✅ Excel ER FERDIG!")
+print("✅ Excel DELUXE FERDIG!")
