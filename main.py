@@ -281,6 +281,24 @@ for player_id, total in totals.items():
 
 conn.commit()
 
+history_data = []
+
+for player_id in totals:
+    history_data.append([
+        player_id,
+        totals[player_id],
+        correct[player_id]
+    ])
+
+df_history = pd.DataFrame(history_data, columns=["PlayerID", "Poeng", "Rette"])
+
+cursor.execute("SELECT id, name FROM players")
+player_map = dict(cursor.fetchall())
+
+df_history["Navn"] = df_history["PlayerID"].map(player_map)
+
+# Rydd kolonner
+df_history = df_history[["Navn", "Poeng", "Rette"]]
 
 # --- DEBUG ---
 print("\nDEBUG:")
@@ -384,11 +402,22 @@ print("Unike rader:", len(unique_rows))
 # --- HISTORIKK ---
 with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
 
-    # --- SAMMENLAGT ---
-    df.to_excel(writer, sheet_name="Sammenlagt", index=False)
+    # ✅ 1. Sammenlagt
+    df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
+df_total = df_total.sort_values(by="Poeng", ascending=False)
+
+    # ✅ 2. Historikk
+df_history.to_excel(writer, sheet_name="Historikk", index=False)
+
+    # ✅ 3. Ett ark per spiller
+for player in df_history["Navn"].unique():
+        df_player = df_history[df_history["Navn"] == player]
+        df_player.to_excel(writer, sheet_name=player[:31], index=False)
+
+print("✅ Excel DELUXE laget!")
 
     # --- HISTORIKK ---
-    cursor.execute("""
+cursor.execute("""
     SELECT 
         p.name,
         w.week_number,
