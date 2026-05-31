@@ -1,5 +1,10 @@
+
 print("JEG ER HER!!!")
+
+
 import sqlite3
+import pandas as pd
+
 import os
 from tkinter import ON
 
@@ -367,7 +372,7 @@ for i, row in enumerate(cursor.fetchall(), start=1):
     name, total, correct = row
     print(f"{i}. {name}: {total} poeng ({correct} rette)")
 
-import pandas as pd
+
 
 rows = cursor.fetchall()
 
@@ -402,7 +407,7 @@ print("Unike rader:", len(unique_rows))
 # --- HISTORIKK ---
 with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
 
-import pandas as pd
+    import pandas as pd
 
 # -------------------
 # Sammenlagt (leaderboard)
@@ -428,13 +433,11 @@ df_history = df_total.copy()   # enkel versjon nå
 # -------------------
 # Excel
 # -------------------
+
 with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
-
-    # ✅ Sammenlagt
     df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
-
-    # ✅ Historikk
     df_history.to_excel(writer, sheet_name="Historikk", index=False)
+
 
     # ✅ Én fane per spiller
     for player in df_total["Navn"]:
