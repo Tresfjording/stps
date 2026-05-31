@@ -441,8 +441,31 @@ writer = pd.ExcelWriter("tippelag.xlsx", engine="openpyxl")
 # ✅ Sammenlagt
 df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
 
+
 # ✅ Historikk
 df_hist.to_excel(writer, sheet_name="Historikk", index=False)
+from openpyxl.chart import BarChart, Reference
+
+# hent arket
+ws = writer.sheets["Sammenlagt"]
+
+# data (poeng)
+data = Reference(ws, min_col=2, min_row=1, max_row=len(df_total)+1)
+
+# navn (spillere)
+categories = Reference(ws, min_col=1, min_row=2, max_row=len(df_total)+1)
+
+# lag graf
+chart = BarChart()
+chart.title = "Poeng per spiller"
+chart.y_axis.title = "Poeng"
+chart.x_axis.title = "Spiller"
+
+chart.add_data(data, titles_from_data=True)
+chart.set_categories(categories)
+
+# legg graf i arket
+ws.add_chart(chart, "E2")
 
 # ✅ Spillere
 for player in df_hist["Navn"].dropna().unique():
