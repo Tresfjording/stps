@@ -1,6 +1,6 @@
 import pandas as pd
 
-file = "tippelag.xlsm"
+file = "SkorgenTippelag.xlsm"
 
 # Les hele arket uten header (fordi Excel er visuelt)
 df = pd.read_excel(file, sheet_name="Kuponger", header=None)
