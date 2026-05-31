@@ -205,8 +205,9 @@ conn.commit()
 cursor.execute("""
     SELECT t.player_id, t.h_percent, t.u_percent, t.b_percent, m.result
     FROM tips t
-    JOIN matches m
-        ON t.week_id = m.week_id AND t.match_number = m.match_number
+JOIN matches m
+  ON t.week_id = m.week_id
+ AND t.match_number = m.match_number
 """)
 
 rows = cursor.fetchall()
