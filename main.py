@@ -1,21 +1,42 @@
+print("JEG ER HER!!!")
 import sqlite3
-
-
-# Opprett forbindelse til database (fil blir laget automatisk)
-conn = sqlite3.connect("data/stps.db")
-cursor = conn.cursor()
-
-# Kjør SQL-script for å lage tabeller
-with open("database/schema.sql", "r") as f:
-    sql_script = f.read()
-    cursor.executescript(sql_script)
-
-conn.commit()
-
-print("Database opprettet!")
-
 import os
 
+print("\nDEBUG INFO:")
+print("Working dir:", os.getcwd())
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+print("BASE_DIR:", BASE_DIR)
+
+db_path = os.path.join(BASE_DIR, "data", "stps.db")
+schema_path = os.path.join(BASE_DIR, "database", "schema.sql")
+
+print("DB path:", db_path)
+print("Schema path:", schema_path)
+
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+db_path = os.path.join(BASE_DIR, "data", "stps.db")
+schema_path = os.path.join(BASE_DIR, "database", "schema.sql")
+
+print("DB path:", db_path)
+print("Schema path:", schema_path)
+
+conn = sqlite3.connect(db_path)
+cursor = conn.cursor()
+
+with open(schema_path, "r") as f:
+    sql_script = f.read()
+
+#---cursor.executescript(sql_script)---
+
+conn.commit()   # ✅ VIKTIG
+
+print("\n--- SQL SCRIPT ---")
+print(sql_script)
+
+cursor.executescript(sql_script)
 # --- Paths ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 

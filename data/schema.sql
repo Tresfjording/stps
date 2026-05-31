@@ -1,3 +1,6 @@
+
+
+
 -- Spillere
 CREATE TABLE IF NOT EXISTS players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,6 +23,7 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 
 -- Tips
+
 CREATE TABLE IF NOT EXISTS tips (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     player_id INTEGER,
@@ -28,10 +32,11 @@ CREATE TABLE IF NOT EXISTS tips (
     h_percent INTEGER,
     u_percent INTEGER,
     b_percent INTEGER,
-    UNIQUE(player_id, week_id, match_number)
+    UNIQUE(player_id, week_id)
 );
 
--- Resultater
+
+
 CREATE TABLE IF NOT EXISTS weekly_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     player_id INTEGER,
@@ -41,3 +46,6 @@ CREATE TABLE IF NOT EXISTS weekly_results (
     bonus INTEGER,
     UNIQUE(player_id, week_id)
 );
+
+
+
