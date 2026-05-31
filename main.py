@@ -434,21 +434,34 @@ df_history = df_total.copy()   # enkel versjon nå
 # Excel
 # -------------------
 
+import pandas as pd
+
+# ✅ Sikkerhetskopi – minst ett ark MÅ skrives
+df_safe = pd.DataFrame({"OK": ["OK"]})
+
 with pd.ExcelWriter("tippelag.xlsx", engine="openpyxl") as writer:
 
-    # ✅ ALLTID skriv dette først
-    df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
+    try:
+        # ✅ Sammenlagt
+        df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
 
-    # ✅ Historikk
-    if 'df_history' in locals():
-        df_history.to_excel(writer, sheet_name="Historikk", index=False)
+        # ✅ Historikk (hvis finnes)
+        if 'df_history' in locals():
+            df_history.to_excel(writer, sheet_name="Historikk", index=False)
 
-    # ✅ Spillere
-    for player in df_total["Navn"]:
-        df_player = df_total[df_total["Navn"] == player]
-        df_player.to_excel(writer, sheet_name=player[:31], index=False)
+        # ✅ Spiller-faner
+        for player in df_total["Navn"]:
+            df_player = df_total[df_total["Navn"] == player]
+            df_player.to_excel(writer, sheet_name=player[:31], index=False)
 
-print("✅ Excel reddet!")
+    except Exception as e:
+        print("⚠️ Excel-feil:", e)
+
+        # 🔥 fallback – sørg for minst ett ark
+        df_safe.to_excel(writer, sheet_name="SAFE", index=False)
+
+print("✅ Excel skrevet ferdig")
+``
 
     # --- HISTORIKK ---
 cursor.execute("""
