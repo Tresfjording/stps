@@ -453,7 +453,7 @@ cursor.execute("""
 rows = cursor.fetchall()
 df_hist = pd.DataFrame(rows, columns=["Navn", "Uke", "Poeng", "Rette"])
 
-# --- START WRITER ---
+# ✅ START WRITER FØRST
 writer = pd.ExcelWriter("tippelag.xlsx", engine="openpyxl")
 
 # ✅ Sammenlagt
@@ -462,7 +462,7 @@ df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
 # ✅ Historikk
 df_hist.to_excel(writer, sheet_name="Historikk", index=False)
 
-# ✅ Én fane per spiller (fra historikk)
+# ✅ Spillere
 for player in df_hist["Navn"].dropna().unique():
     sheet_name = str(player).replace("/", "").replace("\\", "").replace(":", "")[:31]
     df_player = df_hist[df_hist["Navn"] == player]
@@ -470,7 +470,7 @@ for player in df_hist["Navn"].dropna().unique():
     if not df_player.empty:
         df_player.to_excel(writer, sheet_name=sheet_name, index=False)
 
-# ✅ LAGRE
+# ✅ LAGRE PÅ SLUTT
 writer.save()
 
-print("✅ Excel DELUXE FERDIG!")
+print("✅ Excel HELT OK!")
