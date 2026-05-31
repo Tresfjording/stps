@@ -369,8 +369,8 @@ ORDER BY total DESC, total_correct DESC
 
 
 for i, row in enumerate(cursor.fetchall(), start=1):
-    name, total, correct = row
-    print(f"{i}. {name}: {total} poeng ({correct} rette)")
+    name, total, correct_value = row
+    print(f"{i}. {name}: {total} poeng ({correct_value} rette)")
 
 
 
