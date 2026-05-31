@@ -217,6 +217,8 @@ WHERE t.week_id = ?
 
 
 rows = cursor.fetchall()
+print("ROWS (før beregning):", rows[:20])
+
 
 totals = {}
 correct = {}
