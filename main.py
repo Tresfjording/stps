@@ -1,3 +1,11 @@
+
+cursor.execute("DELETE FROM tips;")
+cursor.execute("DELETE FROM matches;")
+cursor.execute("DELETE FROM players;")
+cursor.execute("DELETE FROM weeks;")
+conn.commit()
+
+
 print("JEG ER HER!!!")
 import sqlite3
 import os
@@ -169,11 +177,11 @@ cursor.execute("SELECT id FROM players WHERE name = ?", ("AHH",))
 player_id = cursor.fetchone()[0]
 
 # Legg inn tips for 4 kamper
-for match_number in range(1, 5):
-    cursor.execute("""
-        INSERT OR IGNORE INTO tips (player_id, week_id, match_number, h_percent, u_percent, b_percent)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (player_id, week_id, match_number, 50, 30, 20))
+# for match_number in range(1, 5):
+#    cursor.execute("""
+#        INSERT OR IGNORE INTO tips (player_id, week_id, match_number, h_percent, u_percent, b_percent)
+#        VALUES (?, ?, ?, ?, ?, ?)
+#    """, (player_id, week_id, match_number, 50, 30, 20))
 
 conn.commit()
 
