@@ -1,0 +1,22 @@
+{
+  "name": "stps",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "autopush": "git add . && git commit -m \"Auto-commit: Changes saved on $(date)\" && git push origin main"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tresfjording/stps.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Tresfjording/stps/issues"
+  },
+  "homepage": "https://github.com/Tresfjording/stps#readme"
+}

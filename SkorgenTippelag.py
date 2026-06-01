@@ -1,4 +1,4 @@
-print("🚀 NY VERSJON AV SCRIPTET KJØRES")
+print("🚀 Test ac Autmate Git")
 import matplotlib.pyplot as plt
 
 # ✅ Pivot (poeng per uke)
