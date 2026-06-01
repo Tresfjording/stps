@@ -47,8 +47,8 @@ fig, ax = plt.subplots(figsize=(10,6))
 
 def draw(week_index):
     ax.clear()
-print("TYPE week:", type(week))
-row_start = start_row + week() * step
+print("TYPE week_index:", type(week_index))
+row_start = start_row + week_index * step
 data_row = row_start + player["rows_offset"]
 
 print("Dato rad:", row_start)
