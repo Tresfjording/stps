@@ -1,64 +1,47 @@
+import matplotlib.pyplot as plt
 
-import os
+# ✅ Pivot (poeng per uke)
+pivot = df_data.pivot(index="Uke", columns="Navn", values="Poeng")
 
-print("📁 Working dir:", os.getcwd())
-print("📂 Innhold:", os.listdir())
-
-
-import pandas as pd
-
-file = "SkorgenTippelag.xlsm"
-
-# Les hele arket uten header (fordi Excel er visuelt)
-df = pd.read_excel(file, sheet_name="Kuponger", header=None)
-
-# Spillere vi vet finnes
-players = ["AHH", "RB", "EB", "KAF", "ØG", "JH", "TOH", "UTG", "LEV"]
-
-data = []
-
-current_week = None
-
-for i, row in df.iterrows():
-    row_values = row.astype(str).tolist()
-
-    # Finn uke (linje med dato og ukenummer)
-    if "lørdag" in row_values:
-        # Ukenummer står ofte litt over – vi bruker index
-        current_week = f"Uke_{i}"
-
-    # Finn linje med spillernavn (AHH, RB osv)
-    for p in players:
-        if p in row_values:
-
-            # Les poeng fra samme rad (eller rett under – må justeres litt)
-            try:
-                idx = row_values.index(p)
-                score = row_values[idx + 1]
-
-                if score.isdigit():
-                    data.append([current_week, p, int(score)])
-
-            except:
-                continue
-
-# Lag DataFrame
-df_data = pd.DataFrame(data, columns=["Uke", "Navn", "Poeng"])
-
-print(df_data.head())
-
-pivot = df.pivot(index="Uke", columns="Navn", values="Poeng")
-
+# ✅ Kumulativ (league race)
 pivot.cumsum().plot(figsize=(10,6))
+plt.title("Liga utvikling")
+plt.ylabel("Poeng")
+plt.xlabel("Uke")
+plt.grid()
+plt.show()
 
+# ✅ Leaderboard
+print("\n🏆 Leaderboard:")
+leaderboard = (
+    df_data.groupby("Navn")["Poeng"]
+    .sum()
+    .sort_values(ascending=False)
+)
+print(leaderboard)
+
+# ✅ Form siste 5
+print("\n🔥 Form:")
 form = (
-    df.groupby("Navn")
+    df_data.groupby("Navn")
     .tail(5)
     .groupby("Navn")["Poeng"]
     .mean()
     .sort_values(ascending=False)
 )
-losers = df.loc[df.groupby("Uke")["Poeng"].idxmin()]
-winners = df.loc[df.groupby("Uke")["Poeng"].idxmax()]
-consistency = df.groupby("Navn")["Poeng"].std().sort_values()
-total = df.groupby("Navn")["Poeng"].cumsum()
+print(form)
+
+# ✅ Ukesvinnere
+print("\n🥇 Vinnere per uke:")
+winners = df_data.loc[df_data.groupby("Uke")["Poeng"].idxmax()]
+print(winners)
+
+# ✅ Ukens taper 😄
+print("\n🥴 Dårligste per uke:")
+losers = df_data.loc[df_data.groupby("Uke")["Poeng"].idxmin()]
+print(losers)
+
+# ✅ Stabilitet
+print("\n📊 Stabilitet (lav = jevn):")
+consistency = df_data.groupby("Navn")["Poeng"].std().sort_values()
+print(consistency)
