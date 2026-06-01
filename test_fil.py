@@ -20,17 +20,13 @@ df_long = df.melt(id_vars="dato", var_name="navn", value_name="poeng")
 df_long = df_long.dropna()
 
 # Fjern system
-df_long = df_long[~df_long["navn"].isin(["utg", "lev"])]
+df_long["trend"] = df_long.groupby("navn")["poeng"].diff()
 
 # ------------------------------
 # 🏆 LEADERBOARD
 # ------------------------------
 leaderboard = df_long.groupby("navn")["poeng"].sum().sort_values(ascending=False)
 
-# ------------------------------
-# 🏆 FORM
-# ------------------------------
-df_long["trend"] = df_long.groupby("navn")["poeng"].diff()
 
 print("🏆 Leaderboard:")
 print(leaderboard, "\n")
