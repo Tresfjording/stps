@@ -45,10 +45,10 @@ player = players[player_name]
 
 fig, ax = plt.subplots(figsize=(10,6))
 
-def draw(week):
+def draw(week_index):
     ax.clear()
 print("TYPE week:", type(week))
-row_start = start_row + week * step
+row_start = start_row + week() * step
 data_row = row_start + player["rows_offset"]
 
 print("Dato rad:", row_start)
