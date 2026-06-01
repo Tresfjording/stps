@@ -66,6 +66,9 @@ cum = pivot.cumsum()
 
 cum.plot(marker="o")
 
+df["dato"] = pd.to_datetime(df["dato"], origin="1899-12-30", unit="D")
+cum = cum[leaderboard.index]
+
 plt.title("Liga utvikling")
 plt.xlabel("Runde")
 plt.ylabel("Poeng")
