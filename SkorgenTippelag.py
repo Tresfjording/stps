@@ -1,63 +1,77 @@
-print("🚀 Test ac Autmate Git 01.06.2026  - 10:17:58")
-import matplotlib.pyplot as plt
 import pandas as pd
-df_data = pd.DataFrame({
-    "Uke": [1, 1, 2],
-    "Navn": ["A", "B", "A"],
-    "Poeng": [10, 20, 15]
+import matplotlib.pyplot as plt
+
+print("🚀 Skorgen Tippelag analyse (FIXED)\n")
+
+# ✅ Les tabellen som starter i kolonne P
+df = pd.read_excel(
+    "SkorgenTippelag.xlsm",
+    engine="openpyxl",
+    sheet_name="Statistikk",
+    usecols="P:Z",   # 👉 juster hvis nødvendig
+    header=0
+)
+
+# Fjern tomme rader
+df = df.dropna(how="all")
+
+print("Kolonner funnet:")
+print(df.columns, "\n")
+
+# ------------------------------
+# ✅ FINN riktig kolonnenavn
+# ------------------------------
+# Ofte noe sånt:
+# 'Navn', 'Poeng', 'Poengsnitt'
+
+df = df.rename(columns={
+    df.columns[0]: "Navn",
+    df.columns[1]: "Poeng"
 })
 
-# ✅ Pivot (poeng per uke)
-pivot = df_data.pivot(index="Uke", columns="Navn", values="Poeng")
+# Fjern tomme navn
+df = df.dropna(subset=["Navn"])
 
-# ✅ Kumulativ (league race)
-pivot.cumsum().plot(figsize=(10,6))
-plt.title("Liga utvikling")
+# Fjern systemrekker
+df = df[~df["Navn"].isin(["UTG", "LEV"])]
+
+# ✅ VIKTIG: Konverter Poeng riktig
+df["Poeng"] = pd.to_numeric(df["Poeng"], errors="coerce")
+
+df = df.dropna()
+
+# ------------------------------
+# 🏆 LEADERBOARD
+# ------------------------------
+leaderboard = df.set_index("Navn")["Poeng"].sort_values(ascending=False)
+
+print("🏆 Leaderboard:")
+print(leaderboard, "\n")
+
+# ------------------------------
+# 📈 GRAF
+# ------------------------------
+leaderboard.plot(kind="bar")
+
+plt.title("Total poeng per spiller")
 plt.ylabel("Poeng")
-plt.xlabel("Uke")
-plt.grid()
+plt.xlabel("Navn")
+plt.grid(axis="y")
+
+plt.tight_layout()
 plt.show()
 
-# ✅ Leaderboard
-print("\n🏆 Leaderboard:")
-leaderboard = (
-    df_data.groupby("Navn")["Poeng"]
-    .sum()
-    .sort_values(ascending=False)
-)
-print(leaderboard)
+from openpyxl import load_workbook
+import pandas as pd
 
-# ✅ Form siste 5
-print("\n🔥 Form:")
-form = (
-    df_data.groupby("Navn")
-    .tail(5)
-    .groupby("Navn")["Poeng"]
-    .mean()
-    .sort_values(ascending=False)
-)
-print(form)
+wb = load_workbook("SkorgenTippelag.xlsm", data_only=True)
+ws = wb["Statistikk"]
 
-# ✅ Ukesvinnere
-print("\n🥇 Vinnere per uke:")
-winners = df_data.loc[df_data.groupby("Uke")["Poeng"].idxmax()]
-print(winners)
+table = ws.tables["t_tp"]
 
-# ✅ Ukens taper 😄
-print("\n🥴 Dårligste per uke:")
-losers = df_data.loc[df_data.groupby("Uke")["Poeng"].idxmin()]
-print(losers)
+data = ws[table.ref]
 
-# ✅ Stabilitet
-print("\n📊 Stabilitet (lav = jevn):")
-consistency = df_data.groupby("Navn")["Poeng"].std().sort_values()
-print(consistency)
+df = pd.DataFrame([[cell.value for cell in row] for row in data])
 
-stability = df_data.groupby("Navn")["Poeng"].std().fillna(0)
-df_data["Rank"] = df_data.groupby("Uke")["Poeng"].rank(ascending=False)
-df_data["Total"] = df_data.sort_values("Uke").groupby("Navn")["Poeng"].cumsum()
-
-wins = df_data.loc[df_data.groupby("Uke")["Poeng"].idxmax()]
-wins_count = wins["Navn"].value_counts()
-
-
+df.columns = df.iloc[0]
+df = df[1:]
