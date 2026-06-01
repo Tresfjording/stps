@@ -68,6 +68,21 @@ cum.plot(marker="o")
 
 df["dato"] = pd.to_datetime(df["dato"], origin="1899-12-30", unit="D")
 cum = cum[leaderboard.index]
+cum.plot(linewidth=2.5)
+
+
+for col in cum.columns:
+    if col == leaderboard.idxmax():
+        plt.plot(cum.index, cum[col], linewidth=3)
+
+
+rank = cum.rank(axis=1, ascending=False)
+
+rank.plot()
+plt.title("Plassering over tid")
+plt.gca().invert_yaxis()
+plt.show()
+
 
 plt.title("Liga utvikling")
 plt.xlabel("Runde")
