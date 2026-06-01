@@ -46,3 +46,19 @@ for i, row in df.iterrows():
 df_data = pd.DataFrame(data, columns=["Uke", "Navn", "Poeng"])
 
 print(df_data.head())
+
+pivot = df.pivot(index="Uke", columns="Navn", values="Poeng")
+
+pivot.cumsum().plot(figsize=(10,6))
+
+form = (
+    df.groupby("Navn")
+    .tail(5)
+    .groupby("Navn")["Poeng"]
+    .mean()
+    .sort_values(ascending=False)
+)
+losers = df.loc[df.groupby("Uke")["Poeng"].idxmin()]
+winners = df.loc[df.groupby("Uke")["Poeng"].idxmax()]
+consistency = df.groupby("Navn")["Poeng"].std().sort_values()
+total = df.groupby("Navn")["Poeng"].cumsum()
