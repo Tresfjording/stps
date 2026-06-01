@@ -1,5 +1,11 @@
 print("🚀 Test ac Autmate Git 01.06.2026  - 10:17:58")
 import matplotlib.pyplot as plt
+import pandas as pd
+df_data = pd.DataFrame({
+    "Uke": [1, 1, 2],
+    "Navn": ["A", "B", "A"],
+    "Poeng": [10, 20, 15]
+})
 
 # ✅ Pivot (poeng per uke)
 pivot = df_data.pivot(index="Uke", columns="Navn", values="Poeng")
