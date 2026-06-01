@@ -27,6 +27,11 @@ df_long = df_long[~df_long["navn"].isin(["utg", "lev"])]
 # ------------------------------
 leaderboard = df_long.groupby("navn")["poeng"].sum().sort_values(ascending=False)
 
+# ------------------------------
+# 🏆 FORM
+# ------------------------------
+df_long["trend"] = df_long.groupby("navn")["poeng"].diff()
+
 print("🏆 Leaderboard:")
 print(leaderboard, "\n")
 
@@ -71,9 +76,11 @@ cum = cum[leaderboard.index]
 cum.plot(linewidth=2.5)
 
 
+
 for col in cum.columns:
-    if col == leaderboard.idxmax():
-        plt.plot(cum.index, cum[col], linewidth=3)
+    lw = 3 if col == leaderboard.idxmax() else 1.5
+    plt.plot(cum.index, cum[col], linewidth=lw)
+
 
 
 rank = cum.rank(axis=1, ascending=False)
