@@ -1,4 +1,4 @@
-print("🚀 Test ac Autmate Git 01.06.2026  - 10:10:36")
+print("🚀 Test ac Autmate Git 01.06.2026  - 10:11:31")
 import matplotlib.pyplot as plt
 
 # ✅ Pivot (poeng per uke)
