@@ -1,3 +1,4 @@
+print("🚀 NY VERSJON AV SCRIPTET KJØRES")
 import matplotlib.pyplot as plt
 
 # ✅ Pivot (poeng per uke)
