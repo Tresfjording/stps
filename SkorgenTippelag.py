@@ -52,3 +52,12 @@ print(losers)
 print("\n📊 Stabilitet (lav = jevn):")
 consistency = df_data.groupby("Navn")["Poeng"].std().sort_values()
 print(consistency)
+
+stability = df_data.groupby("Navn")["Poeng"].std().fillna(0)
+df_data["Rank"] = df_data.groupby("Uke")["Poeng"].rank(ascending=False)
+df_data["Total"] = df_data.sort_values("Uke").groupby("Navn")["Poeng"].cumsum()
+
+wins = df_data.loc[df_data.groupby("Uke")["Poeng"].idxmax()]
+wins_count = wins["Navn"].value_counts()
+
+
