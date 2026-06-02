@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import datetime
 from openpyxl import load_workbook
 
 # Parse repeated horizontal blocks (kuponger)
@@ -96,7 +97,8 @@ if __name__ == '__main__':
 
         print(f"Wrote summary to {out_file} sheet Skorgen_Aarsoversikt")
     except PermissionError:
-        alt_file = 'tippelag_Skorgen_Aarsoversikt.xlsx'
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        alt_file = f'tippelag_Skorgen_Aarsoversikt_{timestamp}.xlsx'
         df_summary.to_excel(alt_file, sheet_name='Skorgen_Aarsoversikt', index=False)
         print(f"Could not write to {out_file} (file may be open). Wrote to {alt_file} instead.")
 
