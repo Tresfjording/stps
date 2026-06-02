@@ -1,151 +1,71 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from openpyxl import load_workbook
 
-plt.close('all')
+# Parse repeated horizontal blocks (kuponger)
 
-file = "stps_tolk.xlsx"
+FILE = "stps_tolk.xlsx"
+SHEET = "kuponger"
 
-df = pd.read_excel(file, sheet_name="Hovedtabell", engine="openpyxl")
-
-df = df.rename(columns={
-    df.columns[0]: "Navn",
-    df.columns[1]: "Poeng"
-})
-
-df = df.dropna(subset=["Navn"])
-df["Poeng"] = pd.to_numeric(df["Poeng"], errors="coerce")
-df = df.dropna()
-
-leaderboard = df.set_index("Navn")["Poeng"]
-
-# ✅ riktig sortering for horisontal graf
-leaderboard = leaderboard.sort_values(ascending=True)
-
-# ✅ topp 3 highlight (bottom = best i barh)
-colors = ["steelblue"] * len(leaderboard)
-colors[-1] = "gold"
-colors[-2] = "silver"
-colors[-3] = "#cd7f32"
-
-plt.figure(figsize=(10,6))
-
-ax = leaderboard.plot(kind="barh", color=colors)
-
-# Fjern ramme
-for spine in ax.spines.values():
-    spine.set_visible(False)
-
-# Fjern små ticks
-ax.tick_params(left=False)
-
-# Tekst
-leader = leaderboard.max()
-for i, v in enumerate(leaderboard):
-    gap = leader - v
-    label = f"{int(v)} 👑" if gap == 0 else f"{int(v)} (-{int(gap)})"
-    ax.text(v + 50, i, label, va='center')
-
-plt.title("Hovedtabell")
-plt.xlabel("Poeng")
-plt.ylabel("Spiller")
-plt.grid(axis="x")
-
-plt.show()
+# Konfig: vertikal og horisontal offset
+START_ROW = 1            # A1-basis
+WEEK_STEP = 23           # rader per uke (vertikal forskyvning)
+BLOCKS = 9               # antall horisontale blokker
+BLOCK_START_COL = 14     # N = kolonne 14 (1-basert)
+BLOCK_SPACING = 10       # start->start mellom blokker
+BLOCK_WIDTH = 8          # bredde på hver blokk
+ROWS_PER_BLOCK = 12      # rader i hver blokk (f.eks. 5..16)
 
 
-ax = leaderboard.plot(kind="barh", color=colors)
+def read_blocks(file=FILE, sheet=SHEET):
+    wb = load_workbook(file, data_only=True)
+    ws = wb[sheet] if sheet in wb.sheetnames else wb.active
 
-# ✅ legg på tall
-leader = leaderboard.max()
+    weeks = []
 
+    for week_idx in range(100):
+        row_start = START_ROW + week_idx * WEEK_STEP
+        r0 = row_start + 4
+        r1 = r0 + ROWS_PER_BLOCK - 1
 
-leader = leaderboard.max()
+        # stopp hvis ukens område er tomt i kolonne A (ingen data)
+        colA_vals = [ws.cell(row=r, column=1).value for r in range(r0, r1+1)]
+        if all(v in (None, "") for v in colA_vals):
+            break
 
+        week = {"week_index": week_idx, "blocks": []}
 
-# Fjern kantlinjer
-for spine in ax.spines.values():
-    spine.set_visible(False)
+        for block_idx in range(BLOCKS):
+            start_col = BLOCK_START_COL + block_idx * BLOCK_SPACING
+            block_vals = []
+            for r in range(r0, r1+1):
+                row_vals = [ws.cell(row=r, column=c).value for c in range(start_col, start_col + BLOCK_WIDTH)]
+                block_vals.append(row_vals)
 
-ax.tick_params(left=False)   # fjerner små streker på y-aksen
+            # sjekk om blokken inneholder noe
+            has_data = any(any(cell not in (None, "") for cell in row) for row in block_vals)
+            week["blocks"].append({
+                "block_idx": block_idx,
+                "start_col": start_col,
+                "has_data": has_data,
+                "values": block_vals
+            })
 
-for i, v in enumerate(leaderboard):
-    gap = leader - v
-    label = f"{int(v)} (-{int(gap)})" if gap > 0 else f"{int(v)} (0)"
-    
-    ax.text(v + 50, i, label, va='center')
+        weeks.append(week)
 
-
-for i, (name, v) in enumerate(leaderboard.items()):
-    crown = " 👑" if i == len(leaderboard)-1 else ""
-    gap = leader - v
-    ax.text(v + 50, i, f"{int(v)} (-{int(gap)}){crown}", va='center')
-
-import datetime
-import pandas as pd
-import matplotlib.pyplot as plt
-
-file = "stps_tolk.xlsx"
-
-# Les arket
-df = pd.read_excel(file, sheet_name="Hovedtabell", engine="openpyxl")
-
-# Første kolonne = Navn
-df = df.rename(columns={df.columns[0]: "Navn"})
-
-df = df.dropna(subset=["Navn"])
-
-# Gå gjennom alle andre kolonner
-for col in df.columns[1:]:
-
-    print(f"\n📊 ANALYSE: {col}")
-
-    # Hent kolonne
-    temp = df[["Navn", col]].dropna()
-
-    # gjør om til tall hvis mulig
-    temp[col] = pd.to_numeric(temp[col], errors="coerce")
-    temp = temp.dropna()
-
-    # lag leaderboard
-    leaderboard = temp.set_index("Navn")[col].sort_values(ascending=True)
-
-    print(leaderboard)
-
-    # -------------------
-    # 📈 GRAF
-    # -------------------
-    plt.figure(figsize=(8,5))
-
-    ax = leaderboard.plot(kind="barh", color="steelblue")
-
-    # legg på tall
-    for i, v in enumerate(leaderboard):
-        ax.text(v + 1, i, str(int(v)), va='center')
-
-    plt.title(f"{col}")
-    plt.xlabel("Verdi")
-    plt.ylabel("Spiller")
-
-    # fjern ramme (clean look)
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-
-    ax.tick_params(left=False)
-
-    plt.grid(axis="x")
-    plt.tight_layout()
-
-    plt.show()
+    return weeks
 
 
-plt.title(f"Hovedtabell – {datetime.date.today()}")
+def print_summary(weeks):
+    for w in weeks:
+        print(f"Week {w['week_index']}:")
+        for b in w["blocks"]:
+            print(f"  Block {b['block_idx']} start_col={b['start_col']} has_data={b['has_data']}")
 
 
-plt.title("Hovedtabell")
-plt.xlabel("Poeng")
-plt.ylabel("Spiller")
-plt.grid(axis="x")
+if __name__ == '__main__':
+    weeks = read_blocks()
+    print(f"Found {len(weeks)} weeks with data")
+    print_summary(weeks)
 
-plt.show()
-plt.savefig(f"{col}.png", dpi=150)
 
