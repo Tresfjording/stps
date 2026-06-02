@@ -4,6 +4,7 @@ print("JEG ER HER!!!")
 
 import sqlite3
 import pandas as pd
+import datetime
 
 import os
 from tkinter import ON
@@ -446,7 +447,8 @@ out_file = "tippelag.xlsx"
 try:
     writer = pd.ExcelWriter(out_file, engine="openpyxl")
 except PermissionError:
-    out_file = "tippelag_fallback.xlsx"
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_file = f"tippelag_fallback_{timestamp}.xlsx"
     writer = pd.ExcelWriter(out_file, engine="openpyxl")
     print(f"Could not open tippelag.xlsx (file may be open). Using {out_file} instead.")
 
