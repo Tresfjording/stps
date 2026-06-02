@@ -68,4 +68,36 @@ if __name__ == '__main__':
     print(f"Found {len(weeks)} weeks with data")
     print_summary(weeks)
 
+    # --- Lag en kompakt årsoversikt og skriv til Excel (tippelag.xlsx)
+    import os
+
+    summary_rows = []
+    for w in weeks:
+        for b in w['blocks']:
+            non_empty = sum(1 for row in b['values'] for cell in row if cell not in (None, ""))
+            summary_rows.append({
+                'week': w['week_index'],
+                'block': b['block_idx'],
+                'start_col': b['start_col'],
+                'has_data': b['has_data'],
+                'non_empty_cells': non_empty
+            })
+
+    df_summary = pd.DataFrame(summary_rows)
+
+    out_file = 'tippelag.xlsx'
+    try:
+        if os.path.exists(out_file):
+            with pd.ExcelWriter(out_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                df_summary.to_excel(writer, sheet_name='Skorgen_Aarsoversikt', index=False)
+        else:
+            with pd.ExcelWriter(out_file, engine='openpyxl', mode='w') as writer:
+                df_summary.to_excel(writer, sheet_name='Skorgen_Aarsoversikt', index=False)
+
+        print(f"Wrote summary to {out_file} sheet Skorgen_Aarsoversikt")
+    except PermissionError:
+        alt_file = 'tippelag_Skorgen_Aarsoversikt.xlsx'
+        df_summary.to_excel(alt_file, sheet_name='Skorgen_Aarsoversikt', index=False)
+        print(f"Could not write to {out_file} (file may be open). Wrote to {alt_file} instead.")
+
 
