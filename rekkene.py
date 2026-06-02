@@ -1,40 +1,32 @@
-
-from calendar import week
-
 import pandas as pd
-import matplotlib.pyplot as plt   # ✅ denne manglet
+import matplotlib.pyplot as plt
 
+# ----------------------
+# 📄 LAST EXCEL
+# ----------------------
 file = "stps_tolk.xlsx"
 
-
 xls = pd.ExcelFile(file, engine="openpyxl")
-
-
 print(xls.sheet_names)
 
-
-
-# les hele arket
 df = pd.read_excel(file, sheet_name="kuponger", header=None, engine="openpyxl")
 
 # ----------------------
 # ⚙️ KONFIGURASJON
 # ----------------------
+step = 22
+start_row = 1
 
-step = 22  # rader per uke (juster hvis 22/23)
-start_row = 1  # rad for første dato (B2 ≈ index 1)
-
-# tipper offsets (juster hvis flere)
 players = {
     "AHH": {
         "rows_offset": 15,
-        "cols_play": [13,14,15],   # N:P
-        "cols_points": [17,18,19], # R:T
-        "col_correct": 20          # U
+        "cols_play": [13, 14, 15],   # N:P
+        "cols_points": [17, 18, 19], # R:T
+        "col_correct": 20            # U
     }
 }
 
-player_name = "AHH"   # <-- velg tipper her
+player_name = "AHH"
 current_week = 0
 
 player = players[player_name]
@@ -42,63 +34,49 @@ player = players[player_name]
 # ----------------------
 # 🎨 PLOTT
 # ----------------------
+fig, ax = plt.subplots(figsize=(10, 6))
 
-fig, ax = plt.subplots(figsize=(10,6))
 
+# ----------------------
+# 🧠 DRAW FUNKSJON
+# ----------------------
 def draw(week_index):
     ax.clear()
-print("TYPE week_index:", type(week_index))
-row_start = start_row + week_index * step
-data_row = row_start + player["rows_offset"]
+    ax.set_axis_off()
 
-print("Dato rad:", row_start)
-print("Data rad:", data_row)
+    # beregn ukeoffset
+    row_start = start_row + week_index * step
 
-print(df.iloc[data_row-2:data_row+5, 10:25])  # debug-visning
-
-print("Dato rad:", row_start)
-print("Data rad:", data_row)
-print(df.iloc[data_row-2:data_row+5, 10:25])
-
-...
-
-    # dato
-date = df.iloc[row_start, 1]
-
-    # rad med data
-data_row = row_start + player["rows_offset"]
-
-    # hent rekker
-plays = [int(x) for x in df.iloc[data_row, player["cols_play"]]]
-
-    # hent poeng
-points = [int(x) for x in df.iloc[data_row, player["cols_points"]]]
-
-    # hent riktige
-correct = int(df.iloc[data_row, player["col_correct"]])
-
-    # ----------------------
-    # VISUALISER
-    # ----------------------
-
-text = f"{player_name} – Uke {week+1}\nDato: {date}\n\n"
-
-text += "Rekker:\n"
-for p in plays:
-        text += str(p) + "\n"
-
-text += "\nPoeng:\n"
-for p in points:
-        text += str(p) + "\n"
-
-text += f"\n✅ Rette: {correct}"
-
-ax.text(0.1, 0.5, text, fontsize=12, va='center')
-
-ax.set_title("Kupong‑viewer")
-ax.axis("off")
+    r0 = row_start + 4   # tilsvarer rad 5
+    r1 = row_start + 13  # tilsvarer rad 13
 
 
+
+for i in range(len(venstre)):
+    # ✅ hent venstre del (A:H)
+    venstre = df.iloc[r0:r1, 0:8].values
+
+    # ✅ hent tipper (N:T)
+    hoyre = df.iloc[r0:r1, 13:20].values
+    
+    # venstre
+    v = venstre[i]
+    venstre_str = "\t".join(
+        str(x) if pd.notna(x) else "" for x in v
+    )
+
+    # høyre
+    h = hoyre[i]
+    hoyre_str = "\t".join(
+        str(x) if pd.notna(x) else "" for x in h
+    )
+
+    text += venstre_str + "\t|\t" + hoyre_str + "\n"
+
+
+# ----------------------
+# ⌨️ KEY NAVIGASJON
+# ----------------------
 def on_key(event):
     global current_week
 
@@ -107,18 +85,17 @@ def on_key(event):
     elif event.key == "left":
         current_week -= 1
 
-    # loop rundt
     max_weeks = 40
     current_week = current_week % max_weeks
 
     draw(current_week)
-    fig.canvas.draw()
 
 
+# ----------------------
+# 🚀 START PROGRAM
+# ----------------------
 fig.canvas.mpl_connect("key_press_event", on_key)
 
-draw(current_week)
+draw(0)
 
 plt.show()
-
-
