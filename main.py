@@ -409,7 +409,11 @@ import pandas as pd
 
 df = pd.DataFrame(rows, columns=["Navn", "Poeng", "Rette"])
 
-df.to_excel("tippelag.xlsx", sheet_name="Sammenlagt", index=False)
+try:
+    df.to_excel("tippelag.xlsx", sheet_name="Sammenlagt", index=False)
+except PermissionError:
+    df.to_excel("tippelag_fallback.xlsx", sheet_name="Sammenlagt", index=False)
+    print("Could not write to tippelag.xlsx (file open). Wrote to tippelag_fallback.xlsx instead.")
 
 unique_rows = set(rows)
 print("Unike rader:", len(unique_rows))
@@ -438,7 +442,13 @@ rows = cursor.fetchall()
 df_hist = pd.DataFrame(rows, columns=["Navn", "Uke", "Poeng", "Rette"])
 
 # ✅ START WRITER FØRST
-writer = pd.ExcelWriter("tippelag.xlsx", engine="openpyxl")
+out_file = "tippelag.xlsx"
+try:
+    writer = pd.ExcelWriter(out_file, engine="openpyxl")
+except PermissionError:
+    out_file = "tippelag_fallback.xlsx"
+    writer = pd.ExcelWriter(out_file, engine="openpyxl")
+    print(f"Could not open tippelag.xlsx (file may be open). Using {out_file} instead.")
 
 # ✅ Sammenlagt
 df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
