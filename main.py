@@ -640,6 +640,8 @@ def show_stps_charts_window(df_sammen):
     root.bind("<Right>", on_key)
 
     draw_page(0)
+    root.focus_force()
+    canvas.get_tk_widget().focus_set()
     root.mainloop()
 
 
