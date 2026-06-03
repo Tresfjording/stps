@@ -640,8 +640,12 @@ def show_stps_charts_window(df_sammen):
     root.bind("<Right>", on_key)
 
     draw_page(0)
+    root.update_idletasks()
+    root.attributes('-topmost', True)
+    root.lift()
     root.focus_force()
     canvas.get_tk_widget().focus_set()
+    root.after(500, lambda: root.attributes('-topmost', False))
     root.mainloop()
 
 
@@ -726,6 +730,17 @@ def add_sammenlagt_top_chart(writer, df_sammen_sorted, chart_col):
             series.dPt.append(dp)
 
     ws.add_chart(chart, "E2")
+
+
+def open_excel_workbook(filepath: str) -> bool:
+    try:
+        if os.name == "nt":
+            os.startfile(filepath)
+            print(f"Åpnet Excel-filen: {filepath}")
+            return True
+    except Exception as exc:
+        print(f"Kunne ikke åpne Excel-filen {filepath}: {exc}")
+    return False
 
 
 # Hent tall fra stps_tolk.xlsx og merge dem inn før vi skriver Sammenlagt
@@ -944,6 +959,9 @@ for player in df_hist["Navn"].dropna().unique():
 
 # ✅ LAGRE PÅ SLUTT
 writer.close()
+
+if not open_excel_workbook(out_file):
+    print(f"Excel startet ikke automatisk for {out_file}.")
 
 try:
     show_stps_charts_window(df_sammen_sorted)
