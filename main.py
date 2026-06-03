@@ -593,7 +593,7 @@ def is_chart_column_excluded(column_name: str) -> bool:
     return (
         not name
         or name.startswith("unnamed")
-        or name in {"poeng", "rette", "rank", "antall rette"}
+        or name in {"rette", "rank", "antall rette"}
     )
 
 
@@ -657,7 +657,7 @@ def build_sammenlagt_chart_pages(df_sammen):
     if not numeric_cols:
         return []
 
-    preferred_metrics = ["Totalt", "hp", "up", "bp", "tp", "Hjemmepoeng", "Uavgjortpoeng", "Bortepoeng"]
+    preferred_metrics = ["Totalt", "Poeng", "hp", "up", "bp", "tp", "Hjemmepoeng", "Uavgjortpoeng", "Bortepoeng"]
     metric = None
     for preferred in preferred_metrics:
         for col in numeric_cols:
