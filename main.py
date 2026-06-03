@@ -589,7 +589,12 @@ def sanitize_sheet_name(name: str) -> str:
 
 
 def is_chart_column_excluded(column_name: str) -> bool:
-    return str(column_name).strip().lower() in {"poeng", "rette", "rank", "antall rette"}
+    name = str(column_name).strip().lower()
+    return (
+        not name
+        or name.startswith("unnamed")
+        or name in {"poeng", "rette", "rank", "antall rette"}
+    )
 
 
 def add_numeric_column_charts(writer, df_hovedtabell):
@@ -643,11 +648,33 @@ def build_sammenlagt_chart_pages(df_sammen):
     if not numeric_cols:
         return []
 
+    # Fjern kolonner som bare er navnløse eller har nullverdier over hele området
+    numeric_cols = [
+        c for c in numeric_cols
+        if str(c).strip().lower() != ""
+        and top_rows[c].fillna(0).abs().sum() != 0
+    ]
+    if not numeric_cols:
+        return []
+
+    preferred_metrics = ["Totalt", "hp", "up", "bp", "tp", "Hjemmepoeng", "Uavgjortpoeng", "Bortepoeng"]
+    metric = None
+    for preferred in preferred_metrics:
+        for col in numeric_cols:
+            if str(col).strip().lower() == preferred.lower():
+                metric = col
+                break
+        if metric is not None:
+            break
+
+    if metric is None:
+        metric = max(numeric_cols, key=lambda c: top_rows[c].fillna(0).abs().sum())
+
     pages = []
     for _, row in top_rows.iterrows():
         player = str(row["Navn"])
-        values = [float(row[c]) if pd.notna(row[c]) else 0.0 for c in numeric_cols]
-        pages.append((player, numeric_cols, values))
+        value = float(row[metric]) if pd.notna(row[metric]) else 0.0
+        pages.append((player, [metric], [value]))
 
     preferred_order = ["AHH", "RB", "EB", "KAF", "ØG", "JH", "TOH", "UTG", "LEV"]
     order_map = {name: idx for idx, name in enumerate(preferred_order)}
