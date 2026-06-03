@@ -11,12 +11,15 @@ from openpyxl.chart.label import DataLabelList
 from openpyxl.chart.series import DataPoint
 
 import os
+import shutil
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import FixedLocator
+
+SOURCE_XLSM = "STPS 2026.xlsm"
 
 
 def calculate_uniform_y_max(df, exclude_cols=None):
@@ -87,7 +90,34 @@ print("\nDEBUG INFO:")
 print("Working dir:", os.getcwd())
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SOURCE_XLSM = os.path.join(BASE_DIR, SOURCE_XLSM)
 print("BASE_DIR:", BASE_DIR)
+
+
+def ensure_local_source_file():
+    local_path = SOURCE_XLSM
+    if os.path.isfile(local_path):
+        print(f"Bruker lokal kildefil: {local_path}")
+        return local_path
+
+    env_path = os.environ.get("STPS_SOURCE_PATH") or os.environ.get("SOURCE_XLSM_PATH")
+    if env_path:
+        if os.path.isfile(env_path):
+            try:
+                shutil.copy2(env_path, local_path)
+                print(f"Kopierte kildefil fra delt plassering: {env_path}")
+                return local_path
+            except Exception as exc:
+                print(f"Kunne ikke kopiere kildefilen fra {env_path}: {exc}")
+        else:
+            print(f"Konfigurert kildefil-sti finnes ikke: {env_path}")
+
+    raise FileNotFoundError(
+        f"Kildefilen '{local_path}' finnes ikke. "
+        "Legg den i samme mappe som main.py, eller sett STPS_SOURCE_PATH til en gyldig sti."
+    )
+
+ensure_local_source_file()
 
 db_path = os.path.join(BASE_DIR, "data", "stps.db")
 schema_path = os.path.join(BASE_DIR, "database", "schema.sql")
@@ -484,9 +514,16 @@ for i, (name, total, correct) in enumerate(rows, start=1):
 import pandas as pd
 
 
-def load_stps_tolk_data(filepath="stps_tolk.xlsx"):
+def load_stps_tolk_data(filepath=SOURCE_XLSM):
     try:
         df_hovedtabell = pd.read_excel(filepath, sheet_name="Hovedtabell", engine="openpyxl")
+        if df_hovedtabell.empty:
+            try:
+                wb = load_workbook(filepath, data_only=True)
+                if "Hovedtabell" in wb.sheetnames:
+                    print(f"Warning: '{filepath}' Hovedtabell-sheet finnes, men inneholder ingen lesbare data. Sjekk at arket er riktig og ikke bare #REF! eller tomme celler.")
+            except Exception:
+                pass
     except Exception as exc:
         print(f"Warning: could not load '{filepath}' Hovedtabell: {exc}")
         df_hovedtabell = pd.DataFrame()
@@ -744,7 +781,7 @@ def open_excel_workbook(filepath: str) -> bool:
     return False
 
 
-# Hent tall fra stps_tolk.xlsx og merge dem inn før vi skriver Sammenlagt
+# Hent tall fra kilden og merge dem inn før vi skriver Sammenlagt
 (df_hovedtabell, df_kuponger_raw) = load_stps_tolk_data()
 
 df = pd.DataFrame(rows, columns=["Navn", "Poeng", "Rette"])
@@ -773,7 +810,7 @@ if not df_hovedtabell.empty:
     available = [c for c in stps_columns if c in df_hovedtabell.columns]
     if len(available) > 1:
         df = df.merge(df_hovedtabell[available], on="Navn", how="left")
-        print("Merged stps_tolk Hovedtabell columns into Sammenlagt:", [c for c in available if c != "Navn"])
+        print(f"Merged {SOURCE_XLSM} Hovedtabell columns into Sammenlagt:", [c for c in available if c != "Navn"])
     else:
         print("Warning: No matching Hovedtabell columns available for merge.")
 
@@ -838,7 +875,7 @@ for (name, week), vals in sorted(weekly.items(), key=lambda x: (x[0][0], x[0][1]
 
 df_hist = pd.DataFrame(hist_rows, columns=["Navn", "Uke", "hp", "hu", "hb", "Totalt"]) 
 
-# Hent tall fra stps_tolk.xlsx
+# Hent tall fra kildefilen
 (df_hovedtabell, df_kuponger_raw) = load_stps_tolk_data()
 
 # ✅ START WRITER FØRST
@@ -914,7 +951,7 @@ kamp_antall = 12
 # og bruk dem som radetiketter (første kolonne) i det transponerte arket.
 date_headers = []
 if not df_kuponger_raw.empty:
-    raw_wb = load_workbook("stps_tolk.xlsx", data_only=True)
+    raw_wb = load_workbook(SOURCE_XLSM, data_only=True)
     raw_ws = raw_wb["kuponger"] if "kuponger" in raw_wb.sheetnames else raw_wb.active
     for row in raw_ws.iter_rows(min_row=1, max_row=50, values_only=True):
         for val in row:
