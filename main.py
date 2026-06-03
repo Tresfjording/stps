@@ -573,22 +573,15 @@ def build_sammenlagt_chart_pages(df_sammen):
     return pages
 
 
-def show_stps_charts_window(df_sammen):
+def show_stps_charts_window(df_sammen, window_title="Sammenlagt diagrammer"):
     pages = build_sammenlagt_chart_pages(df_sammen)
     if not pages:
-        tmp_root = tk.Tk()
-        tmp_root.withdraw()
-        messagebox.showinfo(
-            "Sammenlagt diagrammer",
-            "Ingen Sammenlagt-diagrammer ble generert fordi alle numeriske kolonner er ekskludert (Poeng, Rette, Rank, Antall rette)."
-        )
-        tmp_root.destroy()
-        return
+        return False
 
     uniform_y = max((max(values) for _, _, values in pages), default=1.0)
 
     root = tk.Tk()
-    root.title("Sammenlagt diagrammer")
+    root.title(window_title)
     root.geometry("1200x760")
 
     title_var = tk.StringVar()
@@ -654,6 +647,7 @@ def show_stps_charts_window(df_sammen):
     canvas.get_tk_widget().focus_set()
     root.after(500, lambda: root.attributes('-topmost', False))
     root.mainloop()
+    return True
 
 
 def add_player_stps_charts(writer, df_hovedtabell):
@@ -971,7 +965,12 @@ if not open_excel_workbook(out_file):
     print(f"Excel startet ikke automatisk for {out_file}.")
 
 try:
-    show_stps_charts_window(df_sammen_sorted)
+    shown = show_stps_charts_window(df_sammen_sorted, "Sammenlagt diagrammer")
+    if not shown and not df_hovedtabell.empty:
+        print("Ingen gyldige Sammenlagt-diagramkolonner. Viser Hovedtabell_STPS i stedet.")
+        shown = show_stps_charts_window(df_hovedtabell, "Hovedtabell_STPS diagrammer")
+    if not shown:
+        print("Fant ingen gyldige diagrammer i hverken Sammenlagt eller Hovedtabell_STPS.")
 except Exception as exc:
     print(f"Kunne ikke åpne diagramvindu: {exc}")
 
