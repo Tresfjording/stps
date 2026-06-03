@@ -5,9 +5,67 @@ print("JEG ER HER!!!")
 import sqlite3
 import pandas as pd
 import datetime
+from openpyxl import load_workbook
+from openpyxl.chart import BarChart, Reference
+from openpyxl.chart.label import DataLabelList
+from openpyxl.chart.series import DataPoint
 
 import os
-from tkinter import ON
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.ticker import FixedLocator
+
+
+def save_and_close_open_excel_workbooks(target_filename: str | None = None, save=True, close=True):
+    """Try to save and close open Excel workbooks (Windows only).
+
+    If `target_filename` is provided, only attempts to save/close the workbook
+    whose `Name` matches (or contains) that filename. If not provided, acts on
+    all open workbooks.
+
+    Uses pywin32 (win32com). If no running Excel instance or pywin32 is
+    unavailable, returns False and prints an informational message.
+    """
+    try:
+        import win32com.client
+        from win32com.client import GetActiveObject
+    except Exception as exc:
+        print(f"Excel automation not available (pywin32): {exc}")
+        return False
+
+    try:
+        try:
+            xl = GetActiveObject("Excel.Application")
+        except Exception:
+            return False
+
+        count = xl.Workbooks.Count
+        for i in range(count, 0, -1):
+            try:
+                wb = xl.Workbooks(i)
+                name = getattr(wb, "Name", "<unknown>")
+                if target_filename:
+                    # match either exact or substring (handles full paths/opened copies)
+                    if target_filename not in name:
+                        continue
+
+                if save:
+                    wb.Save()
+                    print(f"Saved workbook: {name}")
+                if close:
+                    wb.Close(SaveChanges=False)
+                    print(f"Closed workbook: {name}")
+            except Exception as e:
+                print(f"Could not save/close workbook {i}: {e}")
+
+        return True
+    except Exception as e:
+        print(f"Error interacting with Excel: {e}")
+        return False
+
 
 print("\nDEBUG INFO:")
 print("Working dir:", os.getcwd())
@@ -32,6 +90,7 @@ print("Schema path:", schema_path)
 
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
+
 
 # Rydd databasen før vi fyller på nytt
 cursor.execute("DELETE FROM tips;")
@@ -408,7 +467,260 @@ for i, (name, total, correct) in enumerate(rows, start=1):
 
 import pandas as pd
 
+
+def load_stps_tolk_data(filepath="stps_tolk.xlsx"):
+    try:
+        df_hovedtabell = pd.read_excel(filepath, sheet_name="Hovedtabell", engine="openpyxl")
+    except Exception as exc:
+        print(f"Warning: could not load '{filepath}' Hovedtabell: {exc}")
+        df_hovedtabell = pd.DataFrame()
+
+    try:
+        df_kuponger_raw = pd.read_excel(filepath, sheet_name="kuponger", engine="openpyxl")
+    except Exception as exc:
+        print(f"Warning: could not load '{filepath}' kuponger: {exc}")
+        df_kuponger_raw = pd.DataFrame()
+
+    return df_hovedtabell, df_kuponger_raw
+
+
+def sanitize_sheet_name(name: str) -> str:
+    invalid = "\\/*[]:?"
+    cleaned = "".join("_" if ch in invalid else ch for ch in str(name))
+    return cleaned[:31]
+
+
+def add_numeric_column_charts(writer, df_hovedtabell):
+    if df_hovedtabell.empty or "Navn" not in df_hovedtabell.columns:
+        return
+
+    ws = writer.sheets.get("Hovedtabell_STPS")
+    if ws is None:
+        return
+
+    numeric_cols = [
+        c for c in df_hovedtabell.columns
+        if c != "Navn" and pd.api.types.is_numeric_dtype(df_hovedtabell[c])
+    ]
+
+    chart_row = 1
+    for col_name in numeric_cols:
+        col_idx = df_hovedtabell.columns.get_loc(col_name) + 1
+        chart = BarChart()
+        chart.title = f"{col_name}"
+        chart.y_axis.title = col_name
+        chart.x_axis.title = "Spiller"
+        chart.height = 10
+        chart.width = 18
+
+        max_row = len(df_hovedtabell) + 1
+        chart.add_data(Reference(ws, min_col=col_idx, min_row=1, max_row=max_row), titles_from_data=True)
+        chart.set_categories(Reference(ws, min_col=1, min_row=2, max_row=max_row))
+        chart.dLbls = DataLabelList()
+        chart.dLbls.showVal = True
+        ws.add_chart(chart, f"K{chart_row}")
+        chart_row += 18
+
+
+def build_sammenlagt_chart_pages(df_sammen):
+    if df_sammen.empty or "Navn" not in df_sammen.columns:
+        return []
+
+    top_rows = df_sammen.head(15)
+    numeric_cols = [
+        c for c in top_rows.columns
+        if c != "Navn" and pd.api.types.is_numeric_dtype(top_rows[c])
+    ]
+    if not numeric_cols:
+        return []
+
+    pages = []
+    for _, row in top_rows.iterrows():
+        player = str(row["Navn"])
+        values = [float(row[c]) if pd.notna(row[c]) else 0.0 for c in numeric_cols]
+        pages.append((player, numeric_cols, values))
+
+    preferred_order = ["AHH", "RB", "EB", "KAF", "ØG", "JH", "TOH", "UTG", "LEV"]
+    order_map = {name: idx for idx, name in enumerate(preferred_order)}
+    pages.sort(key=lambda page: order_map.get(page[0], len(preferred_order)))
+    return pages
+
+
+def show_stps_charts_window(df_sammen):
+    pages = build_sammenlagt_chart_pages(df_sammen)
+    if not pages:
+        return
+
+    root = tk.Tk()
+    root.title("Sammenlagt diagrammer")
+    root.geometry("1200x760")
+
+    title_var = tk.StringVar()
+    title_label = ttk.Label(root, textvariable=title_var, font=("Segoe UI", 14, "bold"))
+    title_label.pack(fill="x", padx=10, pady=6)
+
+    fig = plt.Figure(figsize=(12, 7), dpi=100)
+    ax = fig.add_subplot(111)
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas.get_tk_widget().pack(expand=True, fill="both")
+
+    instr = ttk.Label(root, text="Bruk piltastene ← og → for å bla gjennom spillere.")
+    instr.pack(fill="x", padx=10, pady=4)
+
+    current_index = {"value": 0}
+
+    def draw_page(index):
+        index %= len(pages)
+        current_index["value"] = index
+        player, metrics, values = pages[index]
+        ax.clear()
+
+        ax.set_title(f"{player} - Sammenlagt", pad=18)
+        bars = ax.bar(metrics, values, color=plt.cm.Blues([0.3 + 0.7 * i / max(1, len(values) - 1) for i in range(len(values))]))
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.set_xticks(range(len(metrics)))
+        ax.xaxis.set_major_locator(FixedLocator(range(len(metrics))))
+        ax.set_xticklabels(metrics, rotation=30, ha="right")
+        ax.margins(x=0.02)
+        ax.set_ylim(0, max(values) * 1.12 if values else 1)
+
+        for bar in bars:
+            height = bar.get_height()
+            ax.annotate(
+                f"{height:.0f}",
+                xy=(bar.get_x() + bar.get_width() / 2, height),
+                xytext=(0, 5),
+                textcoords="offset points",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                fontweight="bold"
+            )
+
+        title_var.set(f"{player} ({index + 1}/{len(pages)})")
+        canvas.draw()
+
+    def on_key(event):
+        if event.keysym == "Right":
+            draw_page(current_index["value"] + 1)
+        elif event.keysym == "Left":
+            draw_page(current_index["value"] - 1)
+
+    root.bind("<Left>", on_key)
+    root.bind("<Right>", on_key)
+
+    draw_page(0)
+    root.mainloop()
+
+
+def add_player_stps_charts(writer, df_hovedtabell):
+    if df_hovedtabell.empty or "Navn" not in df_hovedtabell.columns:
+        return
+
+    numeric_cols = [
+        c for c in df_hovedtabell.columns
+        if c != "Navn" and pd.api.types.is_numeric_dtype(df_hovedtabell[c])
+    ]
+    if not numeric_cols:
+        return
+
+    for _, player_row in df_hovedtabell.iterrows():
+        player = player_row["Navn"]
+        sheet_name = sanitize_sheet_name(f"{player}_STPS")
+        player_df = pd.DataFrame({
+            "Metrikk": numeric_cols,
+            "Verdi": [player_row[c] for c in numeric_cols]
+        })
+
+        player_df.to_excel(writer, sheet_name=sheet_name, index=False)
+        ws = writer.sheets[sheet_name]
+        if ws is None:
+            continue
+
+        chart = BarChart()
+        chart.title = f"{player} - STPS"
+        chart.y_axis.title = "Verdi"
+        chart.x_axis.title = "Metrikk"
+        chart.height = 12
+        chart.width = 24
+
+        max_row = len(player_df) + 1
+        chart.add_data(Reference(ws, min_col=2, min_row=1, max_row=max_row), titles_from_data=True)
+        chart.set_categories(Reference(ws, min_col=1, min_row=2, max_row=max_row))
+        chart.dLbls = DataLabelList()
+        chart.dLbls.showVal = True
+        ws.add_chart(chart, "D2")
+
+
+def add_sammenlagt_top_chart(writer, df_sammen_sorted, chart_col):
+    ws = writer.sheets.get("Sammenlagt")
+    if ws is None or chart_col not in df_sammen_sorted.columns:
+        return
+
+    max_rows = min(len(df_sammen_sorted), 15)
+    data = Reference(ws, min_col=df_sammen_sorted.columns.get_loc(chart_col) + 1, min_row=1, max_row=max_rows + 1)
+    categories = Reference(ws, min_col=1, min_row=2, max_row=max_rows + 1)
+
+    chart = BarChart()
+    chart.title = f"Sammenlagt: {chart_col} for rad 2–{max_rows + 1}"
+    chart.y_axis.title = chart_col
+    chart.x_axis.title = "Tipper"
+    chart.height = 16
+    chart.width = 28
+
+    chart.add_data(data, titles_from_data=True)
+    chart.set_categories(categories)
+    chart.dLbls = DataLabelList()
+    chart.dLbls.showVal = True
+
+    if chart.series:
+        colors = [
+            "FFB2DD", "FFCCE5", "FFD6F0", "E2B5FF", "C2A3FF",
+            "A39BFF", "7B8BFF", "5D7BFF", "3C6CFF", "1F5FFF",
+            "0A4CDA", "0042B3", "003A8C", "003366", "002B4F"
+        ]
+        series = chart.series[0]
+        for idx in range(max_rows):
+            dp = DataPoint(idx=idx)
+            dp.graphicalProperties.solidFill = colors[idx % len(colors)]
+            series.dPt.append(dp)
+
+    ws.add_chart(chart, "E2")
+
+
+# Hent tall fra stps_tolk.xlsx og merge dem inn før vi skriver Sammenlagt
+(df_hovedtabell, df_kuponger_raw) = load_stps_tolk_data()
+
 df = pd.DataFrame(rows, columns=["Navn", "Poeng", "Rette"])
+
+if not df_hovedtabell.empty:
+    stps_columns = [
+        "Navn",
+        "hp",
+        "up",
+        "bp",
+        "straff",
+        "tp",
+        "Rank",
+        "Antall rette",
+        "Bonus",
+        "Summert",
+        "Antall 12",
+        "Antall 11",
+        "Antall 10",
+        "10-premie",
+        "11-premie",
+        "12-premie",
+        "Premie",
+        "Totalt"
+    ]
+    available = [c for c in stps_columns if c in df_hovedtabell.columns]
+    if len(available) > 1:
+        df = df.merge(df_hovedtabell[available], on="Navn", how="left")
+        print("Merged stps_tolk Hovedtabell columns into Sammenlagt:", [c for c in available if c != "Navn"])
+    else:
+        print("Warning: No matching Hovedtabell columns available for merge.")
 
 try:
     df.to_excel("tippelag.xlsx", sheet_name="Sammenlagt", index=False)
@@ -419,31 +731,69 @@ except PermissionError:
 unique_rows = set(rows)
 print("Unike rader:", len(unique_rows))
 
-df_total = df_total.sort_values(by="Poeng", ascending=False)
+# Sorter Sammenlagt etter poeng
+if "Poeng" in df.columns:
+    df_total = df.sort_values(by="Poeng", ascending=False)
+else:
+    df_total = df
 
 # --- HISTORIKK ---
 import pandas as pd
 
 print("Starter Excel...")
 
-# --- HISTORIKK FRA DB ---
+# Beregn per-uke poengfordeling per tipskategori (hp, hu, hb) og totalt
+# Vi summerer poeng per kamp for hver tipper basert på resultatet i matches
 cursor.execute("""
-    SELECT 
-        p.name,
-        w.week_number,
-        r.total_points,
-        r.correct
-    FROM weekly_results r
-    JOIN players p ON r.player_id = p.id
-    JOIN weeks w ON r.week_id = w.id
+    SELECT p.name, w.week_number, t.h_percent, t.u_percent, t.b_percent, m.result
+    FROM tips t
+    JOIN players p ON t.player_id = p.id
+    JOIN matches m ON t.week_id = m.week_id AND t.match_number = m.match_number
+    JOIN weeks w ON t.week_id = w.id
     ORDER BY p.name, w.week_number
 """)
 
-rows = cursor.fetchall()
-df_hist = pd.DataFrame(rows, columns=["Navn", "Uke", "Poeng", "Rette"])
+tip_rows = cursor.fetchall()
+
+weekly = {}
+for name, week, h, u, b, result in tip_rows:
+    key = (name, week)
+    if key not in weekly:
+        weekly[key] = {"hp": 0, "hu": 0, "hb": 0, "Totalt": 0}
+
+    if result is None:
+        continue
+
+    if result == "H":
+        pts = min((h or 0), 65)
+        weekly[key]["hp"] += pts
+    elif result == "U":
+        pts = min((u or 0), 74)
+        weekly[key]["hu"] += pts
+    else:
+        pts = min((b or 0), 65)
+        weekly[key]["hb"] += pts
+
+    weekly[key]["Totalt"] += pts
+
+# Bygg DataFrame for Historikk
+hist_rows = []
+for (name, week), vals in sorted(weekly.items(), key=lambda x: (x[0][0], x[0][1])):
+    hist_rows.append([name, week, vals["hp"], vals["hu"], vals["hb"], vals["Totalt"]])
+
+df_hist = pd.DataFrame(hist_rows, columns=["Navn", "Uke", "hp", "hu", "hb", "Totalt"]) 
+
+# Hent tall fra stps_tolk.xlsx
+(df_hovedtabell, df_kuponger_raw) = load_stps_tolk_data()
 
 # ✅ START WRITER FØRST
 out_file = "tippelag.xlsx"
+# If Excel is running and `tippelag.xlsx` is open, save & close that workbook only.
+try:
+    if os.name == "nt":
+        save_and_close_open_excel_workbooks(target_filename=out_file, save=True, close=True)
+except Exception as exc:
+    print(f"Could not save/close target Excel workbook {out_file}: {exc}")
 try:
     writer = pd.ExcelWriter(out_file, engine="openpyxl")
 except PermissionError:
@@ -453,58 +803,88 @@ except PermissionError:
     print(f"Could not open tippelag.xlsx (file may be open). Using {out_file} instead.")
 
 # ✅ Sammenlagt
-df_total.to_excel(writer, sheet_name="Sammenlagt", index=False)
+# Lag en versjon av Sammenlagt hvor området A1:T16 (header + 15 rader)
+# er sortert etter kolonne T (bruker 'Totalt' hvis tilgjengelig, ellers 'Poeng').
+df_sammen = df_total.copy()
+
+# Sørg for minst 20 kolonner (A..T)
+while df_sammen.shape[1] < 20:
+    df_sammen[f"Extra_{df_sammen.shape[1]+1}"] = ""
+
+if "Totalt" in df_sammen.columns:
+    sort_col = "Totalt"
+elif "Poeng" in df_sammen.columns:
+    sort_col = "Poeng"
+else:
+    sort_col = df_sammen.columns[1]
+
+# Sorter topp 15 rader etter sort_col, behold resten i opprinnelig rekkefølge
+top_n = 15
+top = df_sammen.head(top_n).sort_values(by=sort_col, ascending=False)
+rest = df_sammen.iloc[top_n:]
+df_sammen_sorted = pd.concat([top, rest], ignore_index=True)
+
+# Begrens til kolonnene A..T (første 20 kolonner) ved skriving
+cols_to_write = df_sammen_sorted.columns[:20]
+df_sammen_sorted[cols_to_write].to_excel(writer, sheet_name="Sammenlagt", index=False)
+add_sammenlagt_top_chart(writer, df_sammen_sorted, sort_col)
 
 
 # ✅ Historikk
 df_hist.to_excel(writer, sheet_name="Historikk", index=False)
 
+# ✅ HENT STPS-TALL
+if not df_hovedtabell.empty:
+    df_hovedtabell.to_excel(writer, sheet_name="Hovedtabell_STPS", index=False)
+    add_numeric_column_charts(writer, df_hovedtabell)
+    add_player_stps_charts(writer, df_hovedtabell)
+
+if not df_kuponger_raw.empty:
+    df_kuponger_raw.to_excel(writer, sheet_name="Kuponger_STPS", index=False)
+
 # ✅ KUPONG-ARK (input)
 players = df_total["Navn"].tolist()
 kamp_antall = 12
 
-kupong_data = []
+# Forsøk å hente kampdatoer fra det importerte 'kuponger' arket
+# og bruk dem som radetiketter (første kolonne) i det transponerte arket.
+date_headers = []
+if not df_kuponger_raw.empty:
+    raw_wb = load_workbook("stps_tolk.xlsx", data_only=True)
+    raw_ws = raw_wb["kuponger"] if "kuponger" in raw_wb.sheetnames else raw_wb.active
+    for row in raw_ws.iter_rows(min_row=1, max_row=50, values_only=True):
+        for val in row:
+            if val is None:
+                continue
+            if isinstance(val, (datetime.date, datetime.datetime)):
+                date_headers.append(val.date().isoformat() if isinstance(val, datetime.datetime) else val.isoformat())
+            else:
+                try:
+                    maybe_date = pd.to_datetime(val, errors="coerce")
+                    if not pd.isna(maybe_date):
+                        date_headers.append(maybe_date.date().isoformat())
+                except Exception:
+                    pass
+    date_headers = [d for d in dict.fromkeys(date_headers) if d is not None and int(d[:4]) >= 2000]
 
-for p in players:
-    row = [p] + [""] * kamp_antall + [""]
-    kupong_data.append(row)
+if len(date_headers) >= kamp_antall:
+    date_headers = date_headers[:kamp_antall]
+elif len(date_headers) >= 1:
+    date_headers = [date_headers[0]] * kamp_antall
+else:
+    date_headers = [f"K{i}" for i in range(1, kamp_antall + 1)]
 
-columns = ["Navn"] + [f"K{i}" for i in range(1, kamp_antall + 1)] + ["Sum"]
+# Bygg et transponert kupongark: Dato/label i første kolonne, spillere som kolonner.
+kupong_df = pd.DataFrame(index=date_headers[:kamp_antall], columns=players + ["Sum"])
 
-df_kupong = pd.DataFrame(kupong_data, columns=columns)
+# Fyll med tomme verdier.
+kupong_df[:] = ""
 
+kupong_df.index.name = "Dato"
 
-#---df_pivot = df_kupong.set_index("Navn").T.reset_index()---
-#---df_pivot.rename(columns={"index": "Kamp"}, inplace=True)---
-
+df_kupong = kupong_df.reset_index()
 
 df_kupong.to_excel(writer, sheet_name="Kuponger", index=False)
-
-from openpyxl.chart import BarChart, Reference
-
-# hent arket
-ws = writer.sheets["Sammenlagt"]
-
-# data (poeng)
-data = Reference(ws, min_col=2, min_row=1, max_row=len(df_total)+1)
-
-# navn (spillere)
-categories = Reference(ws, min_col=1, min_row=2, max_row=len(df_total)+1)
-
-# lag graf
-chart = BarChart()
-chart.title = "Poeng per spiller"
-chart.y_axis.title = "Poeng"
-chart.x_axis.title = "Spiller"
-chart.height = 10
-chart.width = 20
-
-
-chart.add_data(data, titles_from_data=True)
-chart.set_categories(categories)
-
-# legg graf i arket
-ws.add_chart(chart, "E2")
 
 # ✅ Spillere
 for player in df_hist["Navn"].dropna().unique():
@@ -516,5 +896,10 @@ for player in df_hist["Navn"].dropna().unique():
 
 # ✅ LAGRE PÅ SLUTT
 writer.close()
+
+try:
+    show_stps_charts_window(df_sammen_sorted)
+except Exception as exc:
+    print(f"Kunne ikke åpne diagramvindu: {exc}")
 
 print("✅ Excel HELT OK!")
