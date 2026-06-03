@@ -19,6 +19,22 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import FixedLocator
 
 
+def calculate_uniform_y_max(df, exclude_cols=None):
+    exclude = {str(c).strip().lower() for c in (exclude_cols or [])}
+    numeric_cols = [
+        c for c in df.columns
+        if str(c).strip().lower() not in exclude
+        and pd.api.types.is_numeric_dtype(df[c])
+    ]
+    if not numeric_cols:
+        return 1.0
+
+    max_value = df[numeric_cols].max(numeric_only=True).max(skipna=True)
+    if pd.isna(max_value) or max_value <= 0:
+        return 1.0
+    return float(max_value)
+
+
 def save_and_close_open_excel_workbooks(target_filename: str | None = None, save=True, close=True):
     """Try to save and close open Excel workbooks (Windows only).
 
@@ -490,6 +506,10 @@ def sanitize_sheet_name(name: str) -> str:
     return cleaned[:31]
 
 
+def is_chart_column_excluded(column_name: str) -> bool:
+    return str(column_name).strip().lower() in {"poeng", "rette", "rank", "antall rette"}
+
+
 def add_numeric_column_charts(writer, df_hovedtabell):
     if df_hovedtabell.empty or "Navn" not in df_hovedtabell.columns:
         return
@@ -500,8 +520,11 @@ def add_numeric_column_charts(writer, df_hovedtabell):
 
     numeric_cols = [
         c for c in df_hovedtabell.columns
-        if c != "Navn" and pd.api.types.is_numeric_dtype(df_hovedtabell[c])
+        if c != "Navn"
+        and not is_chart_column_excluded(c)
+        and pd.api.types.is_numeric_dtype(df_hovedtabell[c])
     ]
+    y_max = calculate_uniform_y_max(df_hovedtabell, exclude_cols={"Navn", "Poeng", "Rette", "Rank", "Antall rette"})
 
     chart_row = 1
     for col_name in numeric_cols:
@@ -510,6 +533,8 @@ def add_numeric_column_charts(writer, df_hovedtabell):
         chart.title = f"{col_name}"
         chart.y_axis.title = col_name
         chart.x_axis.title = "Spiller"
+        chart.y_axis.scaling.min = 0
+        chart.y_axis.scaling.max = y_max
         chart.height = 10
         chart.width = 18
 
@@ -529,7 +554,9 @@ def build_sammenlagt_chart_pages(df_sammen):
     top_rows = df_sammen.head(15)
     numeric_cols = [
         c for c in top_rows.columns
-        if c != "Navn" and pd.api.types.is_numeric_dtype(top_rows[c])
+        if c != "Navn"
+        and not is_chart_column_excluded(c)
+        and pd.api.types.is_numeric_dtype(top_rows[c])
     ]
     if not numeric_cols:
         return []
@@ -550,6 +577,8 @@ def show_stps_charts_window(df_sammen):
     pages = build_sammenlagt_chart_pages(df_sammen)
     if not pages:
         return
+
+    uniform_y = max((max(values) for _, _, values in pages), default=1.0)
 
     root = tk.Tk()
     root.title("Sammenlagt diagrammer")
@@ -583,7 +612,7 @@ def show_stps_charts_window(df_sammen):
         ax.xaxis.set_major_locator(FixedLocator(range(len(metrics))))
         ax.set_xticklabels(metrics, rotation=30, ha="right")
         ax.margins(x=0.02)
-        ax.set_ylim(0, max(values) * 1.12 if values else 1)
+        ax.set_ylim(0, uniform_y * 1.12)
 
         for bar in bars:
             height = bar.get_height()
@@ -620,8 +649,11 @@ def add_player_stps_charts(writer, df_hovedtabell):
 
     numeric_cols = [
         c for c in df_hovedtabell.columns
-        if c != "Navn" and pd.api.types.is_numeric_dtype(df_hovedtabell[c])
+        if c != "Navn"
+        and not is_chart_column_excluded(c)
+        and pd.api.types.is_numeric_dtype(df_hovedtabell[c])
     ]
+    y_max = calculate_uniform_y_max(df_hovedtabell, exclude_cols={"Navn", "Poeng", "Rette", "Rank", "Antall rette"})
     if not numeric_cols:
         return
 
@@ -641,6 +673,8 @@ def add_player_stps_charts(writer, df_hovedtabell):
         chart = BarChart()
         chart.title = f"{player} - STPS"
         chart.y_axis.title = "Verdi"
+        chart.y_axis.scaling.min = 0
+        chart.y_axis.scaling.max = y_max
         chart.x_axis.title = "Metrikk"
         chart.height = 12
         chart.width = 24
@@ -655,7 +689,7 @@ def add_player_stps_charts(writer, df_hovedtabell):
 
 def add_sammenlagt_top_chart(writer, df_sammen_sorted, chart_col):
     ws = writer.sheets.get("Sammenlagt")
-    if ws is None or chart_col not in df_sammen_sorted.columns:
+    if ws is None or chart_col not in df_sammen_sorted.columns or is_chart_column_excluded(chart_col):
         return
 
     max_rows = min(len(df_sammen_sorted), 15)
@@ -665,6 +699,9 @@ def add_sammenlagt_top_chart(writer, df_sammen_sorted, chart_col):
     chart = BarChart()
     chart.title = f"Sammenlagt: {chart_col} for rad 2–{max_rows + 1}"
     chart.y_axis.title = chart_col
+    chart.y_axis.scaling.min = 0
+    chart_y_max = float(max(df_sammen_sorted[chart_col].head(max_rows).max(skipna=True), 1))
+    chart.y_axis.scaling.max = chart_y_max
     chart.x_axis.title = "Tipper"
     chart.height = 16
     chart.width = 28
@@ -811,12 +848,21 @@ df_sammen = df_total.copy()
 while df_sammen.shape[1] < 20:
     df_sammen[f"Extra_{df_sammen.shape[1]+1}"] = ""
 
-if "Totalt" in df_sammen.columns:
+sort_col = None
+if "Totalt" in df_sammen.columns and not is_chart_column_excluded("Totalt"):
     sort_col = "Totalt"
-elif "Poeng" in df_sammen.columns:
-    sort_col = "Poeng"
 else:
-    sort_col = df_sammen.columns[1]
+    valid_sort_cols = [
+        c for c in df_sammen.columns[1:]
+        if not is_chart_column_excluded(c)
+        and pd.api.types.is_numeric_dtype(df_sammen[c])
+    ]
+    if valid_sort_cols:
+        sort_col = valid_sort_cols[0]
+    elif len(df_sammen.columns) > 1:
+        sort_col = df_sammen.columns[1]
+    else:
+        sort_col = df_sammen.columns[0]
 
 # Sorter topp 15 rader etter sort_col, behold resten i opprinnelig rekkefølge
 top_n = 15
