@@ -514,24 +514,69 @@ for i, (name, total, correct) in enumerate(rows, start=1):
 import pandas as pd
 
 
-def load_stps_tolk_data(filepath=SOURCE_XLSM):
+def find_sheet_name_case_insensitive(filepath, candidates):
     try:
-        df_hovedtabell = pd.read_excel(filepath, sheet_name="Hovedtabell", engine="openpyxl")
-        if df_hovedtabell.empty:
-            try:
-                wb = load_workbook(filepath, data_only=True)
-                if "Hovedtabell" in wb.sheetnames:
-                    print(f"Warning: '{filepath}' Hovedtabell-sheet finnes, men inneholder ingen lesbare data. Sjekk at arket er riktig og ikke bare #REF! eller tomme celler.")
-            except Exception:
-                pass
+        wb = load_workbook(filepath, read_only=True, data_only=True)
+        sheet_map = {sheet_name.strip().lower(): sheet_name for sheet_name in wb.sheetnames}
+        for candidate in candidates:
+            if candidate is None:
+                continue
+            normalized = str(candidate).strip().lower()
+            if normalized in sheet_map:
+                return sheet_map[normalized]
     except Exception as exc:
-        print(f"Warning: could not load '{filepath}' Hovedtabell: {exc}")
-        df_hovedtabell = pd.DataFrame()
+        print(f"Warning: could not read sheet names from '{filepath}': {exc}")
+    return None
 
-    try:
-        df_kuponger_raw = pd.read_excel(filepath, sheet_name="kuponger", engine="openpyxl")
-    except Exception as exc:
-        print(f"Warning: could not load '{filepath}' kuponger: {exc}")
+
+def normalize_column_name(column_name):
+    name = str(column_name).strip()
+    lower = name.lower()
+    if lower in {"st medlemmer", "st medlemmer "}:
+        return "Navn"
+    if lower in {"tipper", "tippere"}:
+        return "Navn"
+    return name
+
+
+def load_stps_tolk_data(filepath=SOURCE_XLSM):
+    sheet_name = find_sheet_name_case_insensitive(filepath, ["Hovedtabell", "Heder & Ære", "Data", "Tabeller"])
+    if sheet_name is None:
+        print(f"Warning: Could not find a matching STPS source sheet in '{filepath}'. Trying 'Hovedtabell' anyway.")
+        sheet_name = "Hovedtabell"
+
+    df_hovedtabell = pd.DataFrame()
+    for header in [2, 1, 0, 3, 4]:
+        try:
+            df = pd.read_excel(filepath, sheet_name=sheet_name, engine="openpyxl", header=header)
+            if df.empty:
+                continue
+            df.columns = [normalize_column_name(c) for c in df.columns]
+            if "Navn" not in df.columns:
+                continue
+            df = df[df["Navn"].notna()].copy()
+            if df.empty:
+                continue
+            df["Navn"] = df["Navn"].astype(str).str.strip()
+            print(f"Loaded '{sheet_name}' from '{filepath}' using header={header}. Columns: {list(df.columns[:12])}")
+            df_hovedtabell = df
+            break
+        except Exception as exc:
+            print(f"Warning: failed reading '{sheet_name}' with header={header}: {exc}")
+            continue
+
+    if df_hovedtabell.empty:
+        print(f"Warning: Could not load a valid STPS hovedtabell from '{filepath}'.")
+
+    kuponger_name = find_sheet_name_case_insensitive(filepath, ["kuponger", "Kuponger"])
+    if kuponger_name:
+        try:
+            df_kuponger_raw = pd.read_excel(filepath, sheet_name=kuponger_name, engine="openpyxl")
+        except Exception as exc:
+            print(f"Warning: could not load '{filepath}' sheet '{kuponger_name}': {exc}")
+            df_kuponger_raw = pd.DataFrame()
+    else:
+        print(f"Warning: could not find 'Kuponger' sheet in '{filepath}'.")
         df_kuponger_raw = pd.DataFrame()
 
     return df_hovedtabell, df_kuponger_raw
@@ -952,7 +997,8 @@ kamp_antall = 12
 date_headers = []
 if not df_kuponger_raw.empty:
     raw_wb = load_workbook(SOURCE_XLSM, data_only=True)
-    raw_ws = raw_wb["kuponger"] if "kuponger" in raw_wb.sheetnames else raw_wb.active
+    raw_sheet_name = next((name for name in raw_wb.sheetnames if name.strip().lower() == "kuponger"), None)
+    raw_ws = raw_wb[raw_sheet_name] if raw_sheet_name else raw_wb.active
     for row in raw_ws.iter_rows(min_row=1, max_row=50, values_only=True):
         for val in row:
             if val is None:
