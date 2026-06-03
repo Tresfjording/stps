@@ -576,6 +576,13 @@ def build_sammenlagt_chart_pages(df_sammen):
 def show_stps_charts_window(df_sammen):
     pages = build_sammenlagt_chart_pages(df_sammen)
     if not pages:
+        tmp_root = tk.Tk()
+        tmp_root.withdraw()
+        messagebox.showinfo(
+            "Sammenlagt diagrammer",
+            "Ingen Sammenlagt-diagrammer ble generert fordi alle numeriske kolonner er ekskludert (Poeng, Rette, Rank, Antall rette)."
+        )
+        tmp_root.destroy()
         return
 
     uniform_y = max((max(values) for _, _, values in pages), default=1.0)
