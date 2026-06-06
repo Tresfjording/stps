@@ -552,6 +552,10 @@ def load_stps_tolk_data(filepath=SOURCE_XLSM):
             if df.empty:
                 continue
             df.columns = [normalize_column_name(c) for c in df.columns]
+            # Fjern helt tomme kolonner og kolonner som Excel har gitt navnet Unnamed
+            df = df.loc[:, ~df.columns.astype(str).str.strip().str.lower().str.startswith("unnamed")]
+            df = df.dropna(axis=1, how="all")
+            df = df.loc[:, df.columns.astype(str).str.strip() != ""]
             if "Navn" not in df.columns:
                 continue
             df = df[df["Navn"].notna()].copy()
