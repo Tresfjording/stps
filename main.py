@@ -90,7 +90,7 @@ print("\nDEBUG INFO:")
 print("Working dir:", os.getcwd())
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SOURCE_XLSM = os.path.join(BASE_DIR, SOURCE_XLSM)
+SOURCE_XLSM = os.path.join(BASE_DIR, SOURCE_XLSX)
 print("BASE_DIR:", BASE_DIR)
 
 
