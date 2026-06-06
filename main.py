@@ -857,7 +857,112 @@ def open_excel_workbook(filepath: str) -> bool:
     return False
 
 
+def refresh_excel_queries(filepath: str, timeout: int = 30) -> bool:
+    """Open Excel via COM, call RefreshAll and wait for queries to finish.
+
+    Returns True if refresh appears successful, False otherwise. If pywin32
+    isn't available or we're not on Windows, the function returns False.
+    """
+    if os.name != "nt":
+        print("Skipping Excel query refresh: not running on Windows.")
+        return False
+
+    try:
+        import time
+        import win32com.client
+    except Exception as exc:
+        print(f"Excel automation (pywin32) not available: {exc}")
+        return False
+
+    xl = None
+    wb = None
+    try:
+        xl = win32com.client.Dispatch("Excel.Application")
+        xl.Visible = False
+        wb = xl.Workbooks.Open(os.path.abspath(filepath), UpdateLinks=True)
+        print(f"Refreshing queries in: {filepath}")
+        wb.RefreshAll()
+
+        start = time.time()
+        while True:
+            refreshing = False
+            try:
+                # Check QueryTables on worksheets
+                for ws in wb.Worksheets:
+                    try:
+                        qts = ws.QueryTables
+                        for i in range(1, qts.Count + 1):
+                            qt = qts.Item(i)
+                            if getattr(qt, 'Refreshing', False):
+                                refreshing = True
+                                break
+                        if refreshing:
+                            break
+                    except Exception:
+                        # sheet may not have QueryTables
+                        pass
+
+                # Also check ListObjects that may have QueryTable
+                if not refreshing:
+                    for ws in wb.Worksheets:
+                        try:
+                            los = ws.ListObjects
+                            for i in range(1, los.Count + 1):
+                                lo = los.Item(i)
+                                try:
+                                    qt = lo.QueryTable
+                                    if getattr(qt, 'Refreshing', False):
+                                        refreshing = True
+                                        break
+                                except Exception:
+                                    continue
+                            if refreshing:
+                                break
+                        except Exception:
+                            pass
+            except Exception:
+                refreshing = False
+
+            if not refreshing:
+                break
+            if time.time() - start > timeout:
+                print("Timeout waiting for Excel queries to finish.")
+                break
+            time.sleep(0.5)
+
+        try:
+            wb.Save()
+        except Exception:
+            pass
+        wb.Close(SaveChanges=False)
+        xl.Quit()
+        print("Refresh complete.")
+        return True
+    except Exception as exc:
+        print(f"Error refreshing Excel queries: {exc}")
+        try:
+            if wb is not None:
+                wb.Close(SaveChanges=False)
+        except Exception:
+            pass
+        try:
+            if xl is not None:
+                xl.Quit()
+        except Exception:
+            pass
+        return False
+
+
 # Hent tall fra kilden og merge dem inn før vi skriver Sammenlagt
+# Forsøk å oppdatere spørringer i kildefilen før vi laster data (Windows only)
+try:
+    if os.name == "nt":
+        refreshed = refresh_excel_queries(SOURCE_XLSM, timeout=30)
+        if not refreshed:
+            print("Warning: kunne ikke oppdatere spørringer i kildefilen.")
+except Exception as exc:
+    print(f"Feil ved forsøk på å oppdatere spørringer: {exc}")
+
 (df_hovedtabell, df_kuponger_raw) = load_stps_tolk_data()
 
 df = pd.DataFrame(rows, columns=["Navn", "Poeng", "Rette"])
@@ -891,6 +996,25 @@ if not df_hovedtabell.empty:
         print("Warning: No matching Hovedtabell columns available for merge.")
 
 try:
+    # Sørg for at rangeringer er heltall og unike før vi skriver til Excel.
+    # Hvis "Poeng" finnes, beregn rang basert på Poeng (deretter Rette som tie-breaker)
+    if "Poeng" in df.columns:
+        sort_by = ["Poeng"]
+        asc = [False]
+        if "Rette" in df.columns:
+            sort_by.append("Rette")
+            asc.append(False)
+
+        df = df.sort_values(by=sort_by, ascending=asc).reset_index(drop=True)
+        df["Rang"] = pd.Series(range(1, len(df) + 1), dtype="Int64")
+        # Lag også en engelsk `Rank`-kolonne for kompatibilitet
+        df["Rank"] = df["Rang"]
+    else:
+        # Fallback: konverter eksisterende Rank/Rang til heltall
+        for _col in ("Rang", "Rank"):
+            if _col in df.columns:
+                df[_col] = pd.to_numeric(df[_col], errors="coerce").round().astype("Int64")
+
     df.to_excel("tippelag.xlsx", sheet_name="Hovedtabell_STPS", index=False)
 except PermissionError:
     df.to_excel("tippelag_fallback.xlsx", sheet_name="Hovedtabell_STPS", index=False)
