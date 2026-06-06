@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import FixedLocator
 
-SOURCE_XLSX = "stps_tolk.xlsx"
+SOURCE_XLSM = "STPS 2026.xlsm"
 
 
 def calculate_uniform_y_max(df, exclude_cols=None):
@@ -90,17 +90,17 @@ print("\nDEBUG INFO:")
 print("Working dir:", os.getcwd())
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SOURCE_xlsx = os.path.join(BASE_DIR, SOURCE_XLSX)
+SOURCE_XLSM = os.path.join(BASE_DIR, SOURCE_XLSM)
 print("BASE_DIR:", BASE_DIR)
 
 
 def ensure_local_source_file():
-    local_path = SOURCE_XLSX
+    local_path = SOURCE_XLSM
     if os.path.isfile(local_path):
         print(f"Bruker lokal kildefil: {local_path}")
         return local_path
 
-    env_path = os.environ.get("STPS_SOURCE_PATH") or os.environ.get("SOURCE_xlsx_PATH")
+    env_path = os.environ.get("STPS_SOURCE_PATH") or os.environ.get("SOURCE_XLSM_PATH")
     if env_path:
         if os.path.isfile(env_path):
             try:
@@ -539,13 +539,13 @@ def normalize_column_name(column_name):
     return name
 
 
-def load_stps_tolk_data(filepath=SOURCE_xlsx):
-    sheet_name = find_sheet_name_case_insensitive(filepath, ["hovedtabell_STPS", "Heder & Ære", "Data", "Tabeller"])
+def load_stps_tolk_data(filepath=SOURCE_XLSM):
+    sheet_name = find_sheet_name_case_insensitive(filepath, ["Hovedtabell", "Heder & Ære", "Data", "Tabeller"])
     if sheet_name is None:
-        print(f"Warning: Could not find a matching STPS source sheet in '{filepath}'. Trying 'hovedtabell_STPS' anyway.")
-        sheet_name = "hovedtabell_STPS"
+        print(f"Warning: Could not find a matching STPS source sheet in '{filepath}'. Trying 'Hovedtabell' anyway.")
+        sheet_name = "Hovedtabell"
 
-    df_hovedtabell_STPS = pd.DataFrame()
+    df_hovedtabell = pd.DataFrame()
     for header in [2, 1, 0, 3, 4]:
         try:
             df = pd.read_excel(filepath, sheet_name=sheet_name, engine="openpyxl", header=header)
@@ -563,14 +563,14 @@ def load_stps_tolk_data(filepath=SOURCE_xlsx):
                 continue
             df["Navn"] = df["Navn"].astype(str).str.strip()
             print(f"Loaded '{sheet_name}' from '{filepath}' using header={header}. Columns: {list(df.columns[:12])}")
-            df_hovedtabell_STPS = df
+            df_hovedtabell = df
             break
         except Exception as exc:
             print(f"Warning: failed reading '{sheet_name}' with header={header}: {exc}")
             continue
 
-    if df_hovedtabell_STPS.empty:
-        print(f"Warning: Could not load a valid STPS hovedtabell_STPS from '{filepath}'.")
+    if df_hovedtabell.empty:
+        print(f"Warning: Could not load a valid STPS hovedtabell from '{filepath}'.")
 
     kuponger_name = find_sheet_name_case_insensitive(filepath, ["kuponger", "Kuponger"])
     if kuponger_name:
@@ -583,7 +583,7 @@ def load_stps_tolk_data(filepath=SOURCE_xlsx):
         print(f"Warning: could not find 'Kuponger' sheet in '{filepath}'.")
         df_kuponger_raw = pd.DataFrame()
 
-    return df_hovedtabell_STPS, df_kuponger_raw
+    return df_hovedtabell, df_kuponger_raw
 
 
 def sanitize_sheet_name(name: str) -> str:
@@ -601,25 +601,25 @@ def is_chart_column_excluded(column_name: str) -> bool:
     )
 
 
-def add_numeric_column_charts(writer, df_hovedtabell_STPS):
-    if df_hovedtabell_STPS.empty or "Navn" not in df_hovedtabell_STPS.columns:
+def add_numeric_column_charts(writer, df_hovedtabell):
+    if df_hovedtabell.empty or "Navn" not in df_hovedtabell.columns:
         return
 
-    ws = writer.sheets.get("hovedtabell_STPS_STPS")
+    ws = writer.sheets.get("Hovedtabell_STPS")
     if ws is None:
         return
 
     numeric_cols = [
-        c for c in df_hovedtabell_STPS.columns
+        c for c in df_hovedtabell.columns
         if c != "Navn"
         and not is_chart_column_excluded(c)
-        and pd.api.types.is_numeric_dtype(df_hovedtabell_STPS[c])
+        and pd.api.types.is_numeric_dtype(df_hovedtabell[c])
     ]
-    y_max = calculate_uniform_y_max(df_hovedtabell_STPS, exclude_cols={"Navn", "Poeng", "Rette", "Rank", "Antall rette"})
+    y_max = calculate_uniform_y_max(df_hovedtabell, exclude_cols={"Navn", "Poeng", "Rette", "Rank", "Antall rette"})
 
     chart_row = 1
     for col_name in numeric_cols:
-        col_idx = df_hovedtabell_STPS.columns.get_loc(col_name) + 1
+        col_idx = df_hovedtabell.columns.get_loc(col_name) + 1
         chart = BarChart()
         chart.title = f"{col_name}"
         chart.y_axis.title = col_name
@@ -629,7 +629,7 @@ def add_numeric_column_charts(writer, df_hovedtabell_STPS):
         chart.height = 10
         chart.width = 18
 
-        max_row = len(df_hovedtabell_STPS) + 1
+        max_row = len(df_hovedtabell) + 1
         chart.add_data(Reference(ws, min_col=col_idx, min_row=1, max_row=max_row), titles_from_data=True)
         chart.set_categories(Reference(ws, min_col=1, min_row=2, max_row=max_row))
         chart.dLbls = DataLabelList()
@@ -763,21 +763,21 @@ def show_stps_charts_window(df_sammen, window_title="Sammenlagt diagrammer"):
     return True
 
 
-def add_player_stps_charts(writer, df_hovedtabell_STPS):
-    if df_hovedtabell_STPS.empty or "Navn" not in df_hovedtabell_STPS.columns:
+def add_player_stps_charts(writer, df_hovedtabell):
+    if df_hovedtabell.empty or "Navn" not in df_hovedtabell.columns:
         return
 
     numeric_cols = [
-        c for c in df_hovedtabell_STPS.columns
+        c for c in df_hovedtabell.columns
         if c != "Navn"
         and not is_chart_column_excluded(c)
-        and pd.api.types.is_numeric_dtype(df_hovedtabell_STPS[c])
+        and pd.api.types.is_numeric_dtype(df_hovedtabell[c])
     ]
-    y_max = calculate_uniform_y_max(df_hovedtabell_STPS, exclude_cols={"Navn", "Poeng", "Rette", "Rank", "Antall rette"})
+    y_max = calculate_uniform_y_max(df_hovedtabell, exclude_cols={"Navn", "Poeng", "Rette", "Rank", "Antall rette"})
     if not numeric_cols:
         return
 
-    for _, player_row in df_hovedtabell_STPS.iterrows():
+    for _, player_row in df_hovedtabell.iterrows():
         player = player_row["Navn"]
         sheet_name = sanitize_sheet_name(f"{player}_STPS")
         player_df = pd.DataFrame({
@@ -957,17 +957,17 @@ def refresh_excel_queries(filepath: str, timeout: int = 30) -> bool:
 # Forsøk å oppdatere spørringer i kildefilen før vi laster data (Windows only)
 try:
     if os.name == "nt":
-        refreshed = refresh_excel_queries(SOURCE_xlsx, timeout=30)
+        refreshed = refresh_excel_queries(SOURCE_XLSM, timeout=30)
         if not refreshed:
             print("Warning: kunne ikke oppdatere spørringer i kildefilen.")
 except Exception as exc:
     print(f"Feil ved forsøk på å oppdatere spørringer: {exc}")
 
-(df_hovedtabell_STPS, df_kuponger_raw) = load_stps_tolk_data()
+(df_hovedtabell, df_kuponger_raw) = load_stps_tolk_data()
 
 df = pd.DataFrame(rows, columns=["Navn", "Poeng", "Rette"])
 
-if not df_hovedtabell_STPS.empty:
+if not df_hovedtabell.empty:
     stps_columns = [
         "Navn",
         "hp",
@@ -988,12 +988,12 @@ if not df_hovedtabell_STPS.empty:
         "Premie",
         "Totalt"
     ]
-    available = [c for c in stps_columns if c in df_hovedtabell_STPS.columns]
+    available = [c for c in stps_columns if c in df_hovedtabell.columns]
     if len(available) > 1:
-        df = df.merge(df_hovedtabell_STPS[available], on="Navn", how="left")
-        print(f"Merged {SOURCE_xlsx} hovedtabell_STPS columns into Sammenlagt:", [c for c in available if c != "Navn"])
+        df = df.merge(df_hovedtabell[available], on="Navn", how="left")
+        print(f"Merged {SOURCE_XLSM} Hovedtabell columns into Sammenlagt:", [c for c in available if c != "Navn"])
     else:
-        print("Warning: No matching hovedtabell_STPS columns available for merge.")
+        print("Warning: No matching Hovedtabell columns available for merge.")
 
 try:
     # Sørg for at rangeringer er heltall og unike før vi skriver til Excel.
@@ -1015,9 +1015,9 @@ try:
             if _col in df.columns:
                 df[_col] = pd.to_numeric(df[_col], errors="coerce").round().astype("Int64")
 
-    df.to_excel("tippelag.xlsx", sheet_name="hovedtabell_STPS_STPS", index=False)
+    df.to_excel("tippelag.xlsx", sheet_name="Hovedtabell_STPS", index=False)
 except PermissionError:
-    df.to_excel("tippelag_fallback.xlsx", sheet_name="hovedtabell_STPS_STPS", index=False)
+    df.to_excel("tippelag_fallback.xlsx", sheet_name="Hovedtabell_STPS", index=False)
     print("Could not write to tippelag.xlsx (file open). Wrote to tippelag_fallback.xlsx instead.")
 
 unique_rows = set(rows)
@@ -1076,7 +1076,7 @@ for (name, week), vals in sorted(weekly.items(), key=lambda x: (x[0][0], x[0][1]
 df_hist = pd.DataFrame(hist_rows, columns=["Navn", "Uke", "hp", "hu", "hb", "Totalt"]) 
 
 # Hent tall fra kildefilen
-(df_hovedtabell_STPS, df_kuponger_raw) = load_stps_tolk_data()
+(df_hovedtabell, df_kuponger_raw) = load_stps_tolk_data()
 
 # ✅ START WRITER FØRST
 out_file = "tippelag.xlsx"
@@ -1127,7 +1127,7 @@ df_sammen_sorted = pd.concat([top, rest], ignore_index=True)
 
 # Begrens til kolonnene A..T (første 20 kolonner) ved skriving
 cols_to_write = df_sammen_sorted.columns[:20]
-df_sammen_sorted[cols_to_write].to_excel(writer, sheet_name="hovedtabell_STPS_STPS", index=False)
+df_sammen_sorted[cols_to_write].to_excel(writer, sheet_name="Hovedtabell_STPS", index=False)
 add_sammenlagt_top_chart(writer, df_sammen_sorted, sort_col)
 
 
@@ -1135,10 +1135,10 @@ add_sammenlagt_top_chart(writer, df_sammen_sorted, sort_col)
 df_hist.to_excel(writer, sheet_name="Historikk", index=False)
 
 # ✅ HENT STPS-TALL
-if not df_hovedtabell_STPS.empty:
-    df_hovedtabell_STPS.to_excel(writer, sheet_name="hovedtabell_STPS_STPS", index=False)
-    add_numeric_column_charts(writer, df_hovedtabell_STPS)
-    add_player_stps_charts(writer, df_hovedtabell_STPS)
+if not df_hovedtabell.empty:
+    df_hovedtabell.to_excel(writer, sheet_name="Hovedtabell_STPS", index=False)
+    add_numeric_column_charts(writer, df_hovedtabell)
+    add_player_stps_charts(writer, df_hovedtabell)
 
 if not df_kuponger_raw.empty:
     df_kuponger_raw.to_excel(writer, sheet_name="Kuponger_STPS", index=False)
@@ -1151,7 +1151,7 @@ kamp_antall = 12
 # og bruk dem som radetiketter (første kolonne) i det transponerte arket.
 date_headers = []
 if not df_kuponger_raw.empty:
-    raw_wb = load_workbook(SOURCE_xlsx, data_only=True)
+    raw_wb = load_workbook(SOURCE_XLSM, data_only=True)
     raw_sheet_name = next((name for name in raw_wb.sheetnames if name.strip().lower() == "kuponger"), None)
     raw_ws = raw_wb[raw_sheet_name] if raw_sheet_name else raw_wb.active
     for row in raw_ws.iter_rows(min_row=1, max_row=50, values_only=True):
@@ -1204,11 +1204,11 @@ if not open_excel_workbook(out_file):
 
 try:
     shown = show_stps_charts_window(df_sammen_sorted, "Sammenlagt diagrammer")
-    if not shown and not df_hovedtabell_STPS.empty:
-        print("Ingen gyldige Sammenlagt-diagramkolonner. Viser hovedtabell_STPS_STPS i stedet.")
-        shown = show_stps_charts_window(df_hovedtabell_STPS, "hovedtabell_STPS_STPS diagrammer")
+    if not shown and not df_hovedtabell.empty:
+        print("Ingen gyldige Sammenlagt-diagramkolonner. Viser Hovedtabell_STPS i stedet.")
+        shown = show_stps_charts_window(df_hovedtabell, "Hovedtabell_STPS diagrammer")
     if not shown:
-        print("Fant ingen gyldige diagrammer i hverken Sammenlagt eller hovedtabell_STPS_STPS.")
+        print("Fant ingen gyldige diagrammer i hverken Sammenlagt eller Hovedtabell_STPS.")
 except Exception as exc:
     print(f"Kunne ikke åpne diagramvindu: {exc}")
 
