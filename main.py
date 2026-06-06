@@ -891,9 +891,9 @@ if not df_hovedtabell.empty:
         print("Warning: No matching Hovedtabell columns available for merge.")
 
 try:
-    df.to_excel("tippelag.xlsx", sheet_name="Sammenlagt", index=False)
+    df.to_excel("tippelag.xlsx", sheet_name="Hovedtabell_STPS", index=False)
 except PermissionError:
-    df.to_excel("tippelag_fallback.xlsx", sheet_name="Sammenlagt", index=False)
+    df.to_excel("tippelag_fallback.xlsx", sheet_name="Hovedtabell_STPS", index=False)
     print("Could not write to tippelag.xlsx (file open). Wrote to tippelag_fallback.xlsx instead.")
 
 unique_rows = set(rows)
@@ -1003,7 +1003,7 @@ df_sammen_sorted = pd.concat([top, rest], ignore_index=True)
 
 # Begrens til kolonnene A..T (første 20 kolonner) ved skriving
 cols_to_write = df_sammen_sorted.columns[:20]
-df_sammen_sorted[cols_to_write].to_excel(writer, sheet_name="Sammenlagt", index=False)
+df_sammen_sorted[cols_to_write].to_excel(writer, sheet_name="Hovedtabell_STPS", index=False)
 add_sammenlagt_top_chart(writer, df_sammen_sorted, sort_col)
 
 
