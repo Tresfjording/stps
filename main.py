@@ -691,7 +691,7 @@ def show_stps_charts_window(df_sammen, window_title="Sammenlagt diagrammer"):
 
     root = tk.Tk()
     root.title(window_title)
-    root.geometry("1200x760")
+    root.geometry("600x380")
 
     title_var = tk.StringVar()
     title_label = ttk.Label(root, textvariable=title_var, font=("Segoe UI", 14, "bold"))
