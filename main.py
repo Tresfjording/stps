@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import FixedLocator
 
-SOURCE_XLSM = "STPS 2026.xlsm"
+SOURCE_XLSX = "stps_tolk.xlsx"
 
 
 def calculate_uniform_y_max(df, exclude_cols=None):
@@ -95,7 +95,7 @@ print("BASE_DIR:", BASE_DIR)
 
 
 def ensure_local_source_file():
-    local_path = SOURCE_XLSM
+    local_path = SOURCE_XLSX
     if os.path.isfile(local_path):
         print(f"Bruker lokal kildefil: {local_path}")
         return local_path
