@@ -90,7 +90,7 @@ print("\nDEBUG INFO:")
 print("Working dir:", os.getcwd())
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SOURCE_XLSM = os.path.join(BASE_DIR, SOURCE_XLSX)
+SOURCE_xlsx = os.path.join(BASE_DIR, SOURCE_XLSX)
 print("BASE_DIR:", BASE_DIR)
 
 
@@ -100,7 +100,7 @@ def ensure_local_source_file():
         print(f"Bruker lokal kildefil: {local_path}")
         return local_path
 
-    env_path = os.environ.get("STPS_SOURCE_PATH") or os.environ.get("SOURCE_XLSM_PATH")
+    env_path = os.environ.get("STPS_SOURCE_PATH") or os.environ.get("SOURCE_xlsx_PATH")
     if env_path:
         if os.path.isfile(env_path):
             try:
@@ -539,7 +539,7 @@ def normalize_column_name(column_name):
     return name
 
 
-def load_stps_tolk_data(filepath=SOURCE_XLSM):
+def load_stps_tolk_data(filepath=SOURCE_xlsx):
     sheet_name = find_sheet_name_case_insensitive(filepath, ["Hovedtabell", "Heder & Ære", "Data", "Tabeller"])
     if sheet_name is None:
         print(f"Warning: Could not find a matching STPS source sheet in '{filepath}'. Trying 'Hovedtabell' anyway.")
@@ -957,7 +957,7 @@ def refresh_excel_queries(filepath: str, timeout: int = 30) -> bool:
 # Forsøk å oppdatere spørringer i kildefilen før vi laster data (Windows only)
 try:
     if os.name == "nt":
-        refreshed = refresh_excel_queries(SOURCE_XLSM, timeout=30)
+        refreshed = refresh_excel_queries(SOURCE_xlsx, timeout=30)
         if not refreshed:
             print("Warning: kunne ikke oppdatere spørringer i kildefilen.")
 except Exception as exc:
@@ -991,7 +991,7 @@ if not df_hovedtabell.empty:
     available = [c for c in stps_columns if c in df_hovedtabell.columns]
     if len(available) > 1:
         df = df.merge(df_hovedtabell[available], on="Navn", how="left")
-        print(f"Merged {SOURCE_XLSM} Hovedtabell columns into Sammenlagt:", [c for c in available if c != "Navn"])
+        print(f"Merged {SOURCE_xlsx} Hovedtabell columns into Sammenlagt:", [c for c in available if c != "Navn"])
     else:
         print("Warning: No matching Hovedtabell columns available for merge.")
 
@@ -1151,7 +1151,7 @@ kamp_antall = 12
 # og bruk dem som radetiketter (første kolonne) i det transponerte arket.
 date_headers = []
 if not df_kuponger_raw.empty:
-    raw_wb = load_workbook(SOURCE_XLSM, data_only=True)
+    raw_wb = load_workbook(SOURCE_xlsx, data_only=True)
     raw_sheet_name = next((name for name in raw_wb.sheetnames if name.strip().lower() == "kuponger"), None)
     raw_ws = raw_wb[raw_sheet_name] if raw_sheet_name else raw_wb.active
     for row in raw_ws.iter_rows(min_row=1, max_row=50, values_only=True):
