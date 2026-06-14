@@ -4,7 +4,7 @@ import openpyxl
 
 file = "stps_tolk.xlsx"
 
-df = pd.read_excel(file, sheet_name="Hovedtabell", engine="openpyxl")
+df = pd.read_excel(file, sheet_name="Hovedtabell", table_name="alle", engine="openpyxl")
 
 df = df.rename(columns={df.columns[0]: "Navn"})
 df = df.dropna(subset=["Navn"])
