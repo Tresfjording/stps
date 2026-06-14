@@ -15,7 +15,7 @@ df = df.dropna(subset=["Navn"])
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
 ax.bar(df.iloc[:, 0], df.iloc[:, 1], color="#3498db")
-ax.set_title("Data Visualization from Excel")
+ax.set_title("Årsresultat")
 ax.set_xlabel(df.columns[0])
 ax.set_ylabel(df.columns[1])
 plt.tight_layout()
@@ -34,7 +34,7 @@ html_table = df.to_html(classes="styled-table", index=False)
 html_content = f"""<!DOCTYPE html>
 <html>
 <head>
-    <title>Excel Data Report</title>
+    <title>STPS Data Rapport</title>
     <style>
         body {{ font-family: Arial, sans-serif; margin: 30px; background-color: #f9f9f9; }}
         .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
@@ -48,13 +48,13 @@ html_content = f"""<!DOCTYPE html>
 </head>
 <body style="width: 1200px">
     <div class="container" style="width: 100%">
-        <h2>Visualized Chart</h2>
+        <h2>Skorgen Tippelag 2025/26</h2>
         <div class="chart-container">
             <!-- Embedding the matplotlib figure dynamically using base64 -->
             <img src="data:image/png;base64,{img_base64}" alt="Matplotlib Chart">
         </div>
         
-        <h2>Source Data Table</h2>
+        <h2>Medlemmenes prestasjon</h2>
         {html_table}
     </div>
 </body>
