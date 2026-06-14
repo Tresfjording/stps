@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import openpyxl
 import mpld3
 import io
+import base64
 
 file = "stps_tolk.xlsx"
 
