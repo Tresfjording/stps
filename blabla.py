@@ -91,7 +91,7 @@ html_content = f"""<!DOCTYPE html>
     <title>Excel Data Report</title>
     <style>
         body {{ font-family: Arial, sans-serif; margin: 30px; background-color: #f9f9f9; }}
-        .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
         h2 {{ color: #333; border-bottom: 2px solid #3498db; padding-bottom: 5px; }}
         .chart-container {{ text-align: center; margin: 30px 0; }}
         .styled-table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
