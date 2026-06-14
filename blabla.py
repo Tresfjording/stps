@@ -65,11 +65,57 @@ fig.canvas.mpl_connect("key_press_event", on_key)
 draw(current)
 plt.show()
 
-# Create your plot layout
-fig, ax = plt.subplots()
-#ax.plot([1, 2, 3, 4], [1, 4, 9, 16])
-#ax.set_title(f"{col}")
-ax.plot("Poeng")
+# 2. Generate your chart with matplotlib.pyplot
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.bar(df.iloc[:, 0], df.iloc[:, 1], color="#3498db")
+ax.set_title("Data Visualization from Excel")
+ax.set_xlabel(df.columns[0])
+ax.set_ylabel(df.columns[1])
+plt.tight_layout()
 
-# Export the figure to an interactive HTML document
-mpld3.save_html(fig, "interactive_report.html")
+# 3. Save the plot to an in-memory buffer and encode to base64
+img_buffer = io.BytesIO()
+plt.savefig(img_buffer, format="png")
+img_buffer.seek(0)
+img_base64 = base64.b64encode(img_buffer.getvalue()).decode("utf-8")
+plt.close(fig)  # Free up system memory
+
+# 4. Convert the pandas DataFrame directly to an HTML table string
+html_table = df.to_html(classes="styled-table", index=False)
+
+# 5. Combine everything into a single, clean HTML document
+html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Excel Data Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 30px; background-color: #f9f9f9; }}
+        .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        h2 {{ color: #333; border-bottom: 2px solid #3498db; padding-bottom: 5px; }}
+        .chart-container {{ text-align: center; margin: 30px 0; }}
+        .styled-table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+        .styled-table th {{ background-color: #3498db; color: white; padding: 10px; text-align: left; }}
+        .styled-table td {{ padding: 10px; border-bottom: 1px solid #ddd; }}
+        .styled-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Visualized Chart</h2>
+        <div class="chart-container">
+            <!-- Embedding the matplotlib figure dynamically using base64 -->
+            <img src="data:image/png;base64,{img_base64}" alt="Matplotlib Chart">
+        </div>
+        
+        <h2>Source Data Table</h2>
+        {html_table}
+    </div>
+</body>
+</html>
+"""
+
+# 6. Write the final string content out to a production HTML file
+with open("report.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print("HTML report successfully generated as 'report.html'!")
