@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import openpyxl
+import mpld3
+
 
 file = "stps_tolk.xlsx"
 
@@ -35,10 +37,6 @@ def draw(col_index):
     ax.set_title(f"{col}")
     ax.set_xlabel("Poeng")
 
-    ax.set_title(f"{col}")
-    ax.set_xlabel("hp")
-
-
     # fjern ramme
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -63,5 +61,13 @@ def on_key(event):
 
 fig.canvas.mpl_connect("key_press_event", on_key)
 
+
 draw(current)
 plt.show()
+
+# Create your plot layout
+fig, ax = plt.subplots()
+ax.plot([1, 2, 3, 4], [1, 4, 9, 16])
+
+# Export the figure to an interactive HTML document
+mpld3.save_html(fig, "interactive_report.html")
