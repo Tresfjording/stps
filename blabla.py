@@ -101,7 +101,7 @@ html_content = f"""<!DOCTYPE html>
     </style>
 </head>
 <body>
-    <div class="container" style="width: 1200px>
+    <div class="container" style="width: 1200px">
         <h2>Visualized Chart</h2>
         <div class="chart-container">
             <!-- Embedding the matplotlib figure dynamically using base64 -->
