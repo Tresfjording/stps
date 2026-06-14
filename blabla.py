@@ -100,8 +100,8 @@ html_content = f"""<!DOCTYPE html>
         .styled-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
     </style>
 </head>
-<body>
-    <div class="container" style="width: 1200px">
+<body style="width: 1200px">
+    <div class="container" style="width: 100%">
         <h2>Visualized Chart</h2>
         <div class="chart-container">
             <!-- Embedding the matplotlib figure dynamically using base64 -->
