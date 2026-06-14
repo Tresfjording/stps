@@ -67,9 +67,9 @@ plt.show()
 
 # Create your plot layout
 fig, ax = plt.subplots()
-ax.plot([1, 2, 3, 4], [1, 4, 9, 16])
+#ax.plot([1, 2, 3, 4], [1, 4, 9, 16])
 #ax.set_title(f"{col}")
-ax.set_xlabel("Poeng")
+ax.plot("Poeng")
 
 # Export the figure to an interactive HTML document
 mpld3.save_html(fig, "interactive_report.html")
