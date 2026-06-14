@@ -33,7 +33,11 @@ def draw(col_index):
         ax.text(v + 1, i, str(int(v)), va='center')
 
     ax.set_title(f"{col}")
-    ax.set_xlabel("Poeng", "hp")
+    ax.set_xlabel("Poeng")
+
+    ax.set_title(f"{col}")
+    ax.set_xlabel("hp")
+
 
     # fjern ramme
     for spine in ax.spines.values():
