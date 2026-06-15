@@ -28,7 +28,7 @@ img_base64 = base64.b64encode(img_buffer.getvalue()).decode("utf-8")
 plt.close(fig)  # Free up system memory
 
 # 4. Convert the pandas DataFrame directly to an HTML table string
-html_table = df.to_html(classes="styled-table", index=False, sort=False)
+html_table = df.to_html(classes="styled-table", index=False )
 
 # 5. Combine everything into a single, clean HTML document
 html_content = f"""<!DOCTYPE html>
