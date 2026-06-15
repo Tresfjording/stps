@@ -54,7 +54,7 @@ html_content = f"""<!DOCTYPE html>
             <img src="data:image/png;base64,{img_base64}" alt="Matplotlib Chart">
         </div>
         
-        <h2>Medlemmenes prestasjon</h2>
+        <h2>Medlemmenenes prestasjoner</h2>
         {html_table}
     </div>
 </body>
