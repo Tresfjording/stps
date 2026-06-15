@@ -9,8 +9,8 @@ file = "stps_tolk.xlsx"
 
 df = pd.read_excel(file, sheet_name="Hovedtabell", engine="openpyxl")
 
-df = df.rename(columns={df.columns[0]: "tp"})
-df = df.dropna(subset=["tp"])
+df = df.rename(columns={df.columns[0]: "Navn"})
+df = df.dropna(subset=["Navn"])
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
@@ -46,7 +46,7 @@ html_content = f"""<!DOCTYPE html>
         .styled-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
     </style>
 </head>
-<body style="width: 1200px">
+<body style="width: 100%">
     <div class="container" style="width: 100%">
         <h2>Skorgen Tippelag 2025/26</h2>
         <div class="chart-container">
