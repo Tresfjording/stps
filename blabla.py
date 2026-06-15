@@ -14,7 +14,7 @@ df = df.rename(columns={df.columns[5]: "tp"})
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.bar(df.iloc[:, 0], df.iloc[:, 1], color="#ff0000")
+ax.bar(df.iloc[:, 0], df.iloc[:, 5], color="#ff0000")
 ax.set_title("Årsresultat")
 ax.set_xlabel(df.columns[0])
 ax.set_ylabel(df.columns[5])
