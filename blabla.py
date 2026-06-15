@@ -10,7 +10,7 @@ file = "stps_tolk.xlsx"
 df = pd.read_excel(file, sheet_name="Hovedtabell", engine="openpyxl")
 
 df = df.rename(columns={df.columns[0]: "Navn"})
-df = df.dropna(subset=["Navn"])
+df = df.dropna(subset=["tp"])
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
