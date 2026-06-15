@@ -17,7 +17,7 @@ fig, ax = plt.subplots(figsize=(7, 4))
 ax.bar(df.iloc[:, 0], df.iloc[:, 1], color="#3498db")
 ax.set_title("Årsresultat")
 ax.set_xlabel(df.columns[0])
-ax.set_ylabel(df.columns[1])
+ax.set_ylabel(df.columns[5])
 plt.tight_layout()
 
 # 3. Save the plot to an in-memory buffer and encode to base64
