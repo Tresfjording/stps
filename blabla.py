@@ -14,7 +14,7 @@ df = df.dropna(subset=["Navn"])
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.bar(df.iloc[:, 0], df.iloc[:, 1], color="#3498db")
+ax.bar(df.iloc[:, 0], df.iloc[:, 5], color="#3498db")
 ax.set_title("Årsresultat")
 ax.set_xlabel(df.columns[0])
 ax.set_ylabel(df.columns[5])
