@@ -16,10 +16,10 @@ df = df.dropna(subset=["Totalt"])
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.bar(df.iloc[:, 0], df.iloc[:, 12], color="#175c5f", width=[0.5])
+ax.bar(df.iloc[:, 0], df.iloc[:, 11], color="#175c5f", width=[0.5])
 ax.set_title("Årsresultat 2026/2027")
 ax.set_xlabel(df.columns[0])
-ax.set_ylabel(df.columns[12])
+ax.set_ylabel(df.columns[11])
 #ax.set_xlim(0, 10)
 
 plt.ylim(10000, 15000) # Set y-axis 
@@ -55,7 +55,7 @@ html_content = f"""<!DOCTYPE html>
 <body style="width: 100%" align="center">
 
 <div class="header">
-    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 150px; margin-bottom: 20px;">
+    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 200px; margin-bottom: 20px;">
 
 </div>
 
@@ -68,7 +68,7 @@ html_content = f"""<!DOCTYPE html>
 
     <!-- Diagrammet -->
     <div class="chart-container">
-        <img src="data:image/png;base64,{img_base64}" alt="Matplotlib Chart">
+        <img src="data:image/png;base64,{img_base64}" alt="Skorgen Tippelag Prestasjoner">
     </div>
 
 
