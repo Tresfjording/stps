@@ -1,10 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import openpyxl
-import mpld3
 import io
 import base64
-import numpy as np
 
 
 file = "stps_tolk.xlsx"
