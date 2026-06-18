@@ -12,7 +12,7 @@ file = "stps_tolk.xlsx"
 df = pd.read_excel(file, sheet_name="Hovedtabell", engine="openpyxl")
 
 df = df.rename(columns={df.columns[0]: "Navn"})
-df = df.dropna(subset=["Summert"])
+df = df.dropna(subset=["Totalt"])
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
@@ -55,7 +55,7 @@ html_content = f"""<!DOCTYPE html>
 <body style="width: 100%" align="center">
 
 <div class="header">
-    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 150px; margin-bottom: 20px;">
+    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 200px; margin-bottom: 20px;">
 
 </div>
 
@@ -68,7 +68,7 @@ html_content = f"""<!DOCTYPE html>
 
     <!-- Diagrammet -->
     <div class="chart-container">
-        <img src="data:image/png;base64,{img_base64}" alt="Matplotlib Chart">
+        <img src="data:image/png;base64,{img_base64}" alt="Skorgen Tippelag Prestasjoner">
     </div>
 
 
