@@ -6,6 +6,7 @@ import io
 import base64
 import numpy as np
 
+#18.06.2026  - 17:18:13
 
 file = "stps_tolk.xlsx"
 
