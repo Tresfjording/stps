@@ -6,7 +6,6 @@ import io
 import base64
 import numpy as np
 
-#18.06.2026  - 17:18:13
 
 file = "stps_tolk.xlsx"
 
@@ -47,7 +46,7 @@ html_content = f"""<!DOCTYPE html>
         .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
         h2 {{ color: #333; border-bottom: 2px solid #175c5f; padding-bottom: 5px; }}
         .chart-container {{ text-align: center; margin: 30px 0; }}
-        .styled-table {{ width: 12000px; border-collapse: collapse; margin-top: 20px; }}
+        .styled-table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
         .styled-table th {{ background-color: #175c5f; color: white; padding: 10px; text-align: left; }}
         .styled-table td {{ padding: 10px; border-bottom: 1px solid #ddd; }}
         .styled-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
@@ -56,23 +55,25 @@ html_content = f"""<!DOCTYPE html>
 <body style="width: 100%" align="center">
 
 <div class="header">
-    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 200px; margin-bottom: 20px;">
+    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 150px; margin-bottom: 20px;">
 
 </div>
 
-    <div class="container" style="width: 100%"></div>
+    <div class="container" style="width: 100%">
         
 
     <div class="chart-row">
+
+    
+
     <!-- Diagrammet -->
+    <div class="chart-container">
+        <img src="data:image/png;base64,{img_base64}" alt="Matplotlib Chart">
     </div>
-       <div class="chart-container">
-        <img src="data:image/png;base64,{img_base64}" alt="Skorgen Tippelag Prestasjoner">
-    </div>
 
 
 
-     <div>   
+        
         <h2>Medlemmenes prestasjoner</h2>
         {html_table}
     </div>
