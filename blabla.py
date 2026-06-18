@@ -16,10 +16,10 @@ df = df.dropna(subset=["Totalt"])
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.bar(df.iloc[:, 0], df.iloc[:, 11], color="#175c5f", width=[0.5])
+ax.bar(df.iloc[:, 0], df.iloc[:, 10], color="#175c5f", width=[0.5])
 ax.set_title("Årsresultat 2026/2027")
 ax.set_xlabel(df.columns[0])
-ax.set_ylabel(df.columns[11])
+ax.set_ylabel(df.columns[10])
 #ax.set_xlim(0, 10)
 
 plt.ylim(10000, 15000) # Set y-axis 
