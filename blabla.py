@@ -55,14 +55,14 @@ html_content = f"""<!DOCTYPE html>
 <body style="width: 100%" align="center">
 
 <div class="header">
-    <img src="skorgen_tippelag_logo.png" class="container">
+    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 150px; margin-bottom: 20px;">
 
 </div>
 
     <div class="container" style="width: 100%">
         
 
-<div class="chart-row">
+    <div class="chart-row">
 
     
 
