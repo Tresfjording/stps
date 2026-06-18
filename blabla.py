@@ -9,14 +9,14 @@ file = "stps_tolk.xlsx"
 df = pd.read_excel(file, sheet_name="Hovedtabell", engine="openpyxl")
 
 df = df.rename(columns={df.columns[0]: "Navn"})
-df = df.dropna(subset=["Totalt"])
+df = df.dropna(subset=["Seire"])
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.bar(df.iloc[:, 0], df.iloc[:, 16], color="#175c5f", width=[0.5])
+ax.bar(df.iloc[:, 0], df.iloc[:, 17], color="#175c5f", width=[0.5])
 ax.set_title("Årsresultat 2026/2027")
 ax.set_xlabel(df.columns[0])
-ax.set_ylabel(df.columns[16])
+ax.set_ylabel(df.columns[17])
 #ax.set_xlim(0, 10)
 
 plt.ylim(10000, 15000) # Set y-axis 
