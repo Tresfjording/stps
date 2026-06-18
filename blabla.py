@@ -9,7 +9,7 @@ file = "stps_tolk.xlsx"
 df = pd.read_excel(file, sheet_name="Hovedtabell", engine="openpyxl")
 
 df = df.rename(columns={df.columns[0]: "Navn"})
-df = df.dropna(subset=["Rank"])
+df = df.dropna(subset=["Rank-1"])
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
@@ -40,10 +40,10 @@ html_content = f"""<!DOCTYPE html>
     <title>STPS Data Rapport</title>
     <style>
         body {{ font-family: Arial, sans-serif; margin: 30px; background-color: #f9f9f9; }}
-        .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        .container {{ max-width: 1500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
         h2 {{ color: #333; border-bottom: 2px solid #175c5f; padding-bottom: 5px; }}
         .chart-container {{ text-align: center; margin: 30px 0; }}
-        .styled-table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+        .styled-table {{ width: 1500px; border-collapse: collapse; margin-top: 20px; }}
         .styled-table th {{ background-color: #175c5f; color: white; padding: 10px; text-align: left; }}
         .styled-table td {{ padding: 10px; border-bottom: 1px solid #ddd; }}
         .styled-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
