@@ -43,7 +43,7 @@ html_content = f"""<!DOCTYPE html>
     <title>STPS Data Rapport</title>
     <style>
         body {{ font-family: Arial, sans-serif; margin: 30px; background-color: #f9f9f9; }}
-        .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        .container {{ max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
         h2 {{ color: #333; border-bottom: 2px solid #175c5f; padding-bottom: 5px; }}
         .chart-container {{ text-align: center; margin: 30px 0; }}
         .styled-table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
@@ -59,21 +59,19 @@ html_content = f"""<!DOCTYPE html>
 
 </div>
 
-    <div class="container" style="width: 100%">
+    <div class="container" style="width: 100%"></div>
         
 
     <div class="chart-row">
-
-    
-
     <!-- Diagrammet -->
-    <div class="chart-container">
+    </div>
+       <div class="chart-container">
         <img src="data:image/png;base64,{img_base64}" alt="Skorgen Tippelag Prestasjoner">
     </div>
 
 
 
-        
+     <div>   
         <h2>Medlemmenes prestasjoner</h2>
         {html_table}
     </div>
