@@ -54,7 +54,7 @@ html_content = f"""<!DOCTYPE html>
 <body style="width: 100%" align="center">
 
 <div class="header">
-    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 200px; margin-bottom: 20px;">
+    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 500px; margin-bottom: 20px;">
 
 </div>
 
