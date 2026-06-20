@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import io
 import base64
 
+#20.06.2026  - 16:57:35
 
 file = "stps_tolk.xlsx"
 
