@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import io
 import base64
 
-#20.06.2026  - 16:57:35
+#20.06.2026  - 20:51:17
 
 file = "stps_tolk.xlsx"
 
@@ -67,7 +67,7 @@ html_content = f"""<!DOCTYPE html>
 
     <!-- Diagrammet -->
     <div class="chart-container">
-        <img src="data:image/png;base64,{img_base64}" alt="Skorgen Tippelag Prestasjoner">
+        <img src="data:image/png;base64,{img_base64}" alt="USTABIL VERSJON Skorgen Tippelag Prestasjoner USTABIL VERSJON">
     </div>
 
 
