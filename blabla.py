@@ -37,6 +37,7 @@ html_table = df.to_html(classes="styled-table", index=False )
 html_content = f"""<!DOCTYPE html>
 <html>
 <head>
+<!-- 21.06.2026  - 18:29:20 -->
 <meta charset="UTF-8">
     <title>STPS Data Rapport</title>
     <style>
