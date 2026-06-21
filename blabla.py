@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import io
 import base64
 
-#21.06.2026  - 18:25:12
 
 file = "stps_tolk.xlsx"
 
@@ -37,7 +36,7 @@ html_table = df.to_html(classes="styled-table", index=False )
 html_content = f"""<!DOCTYPE html>
 <html>
 <head>
-<!-- 21.06.2026  - 18:29:20 -->
+<!-- 21.06.2026  - 19:09:40 -->
 <meta charset="UTF-8">
     <title>STPS Data Rapport</title>
     <style>
@@ -55,7 +54,7 @@ html_content = f"""<!DOCTYPE html>
 <body style="width: 100%" align="center">
 
 <div class="container">
-    <img src="skorgen_tippelag_logo.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 500px; margin-bottom: 20px;">
+    <img src="st_logo:hvit_bgr.png" class="header-logo" alt="Skorgen Tippelag Logo" style="width: 500px; margin-bottom: 20px;">
 
 </div>
 
