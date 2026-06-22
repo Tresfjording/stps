@@ -13,10 +13,10 @@ df = df.dropna(subset=["Totalt"])
 
 # 2. Generate your chart with matplotlib.pyplot
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.bar(df.iloc[:, 0], df.iloc[:, 17], color="#175c5f", width=[0.5])
+ax.bar(df.iloc[:, 0], df.iloc[:, 16], color="#175c5f", width=[0.5])
 ax.set_title("Årsresultat 2026/2027")
 ax.set_xlabel(df.columns[0])
-ax.set_ylabel(df.columns[17])
+ax.set_ylabel(df.columns[16])
 #ax.set_xlim(0, 10)
 
 plt.ylim(10000, 15000) # Set y-axis 
@@ -36,7 +36,7 @@ html_table = df.to_html(classes="styled-table", index=False )
 html_content = f"""<!DOCTYPE html>
 <html>
 <head>
-<!-- 22.06.2026  - 19:55:19 -->
+<!-- 22.06.2026  - 20:32:16 -->
 <meta charset="UTF-8">
     <title>STPS Data Rapport</title>
     <style>
