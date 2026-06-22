@@ -12,7 +12,7 @@ df = df.rename(columns={df.columns[0]: "Navn"})
 df = df.dropna(subset=["Totalt"])
 
 # 2. Generate your chart with matplotlib.pyplot
-fig, ax = plt.subplots(figsize=(9, 4))
+fig, ax = plt.subplots(figsize=(7, 7))
 ax.bar(df.iloc[:, 0], df.iloc[:, 14], color="#175c5f", width=[0.5])
 ax.set_title("Årsresultat 2026/2027")
 ax.set_xlabel(df.columns[0])
