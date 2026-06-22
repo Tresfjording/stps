@@ -73,7 +73,7 @@ html_content = f"""<!DOCTYPE html>
 
 
         
-        <h2>TEST - Medlemmenes resultater fra 2026 vist i 2027 regler - TEST</h2>
+        <h2>TEST - Medlemmenes resultater fra 2026 vist i 2027 forslag drakt - TEST</h2>
         {html_table}
     </div>
 </body>
