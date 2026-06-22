@@ -36,7 +36,7 @@ html_table = df.to_html(classes="styled-table", index=False )
 html_content = f"""<!DOCTYPE html>
 <html>
 <head>
-<!-- 21.06.2026  - 19:09:40 -->
+<!-- 22.06.2026  - 13:28:05 -->
 <meta charset="UTF-8">
     <title>STPS Data Rapport</title>
     <style>
@@ -67,13 +67,13 @@ html_content = f"""<!DOCTYPE html>
 
     <!-- Diagrammet -->
     <div class="chart-container">
-        <img src="data:image/png;base64,{img_base64}" alt="USTABIL VERSJON Skorgen Tippelag Prestasjoner USTABIL VERSJON">
+        <img src="data:image/png;base64,{img_base64}" alt="Skorgen Tippelag Prestasjoner">
     </div>
 
 
 
         
-        <h2>Medlemmenes prestasjoner</h2>
+        <h2>TEST - Medlemmenes resultater fra 2026 vist i 2027 regler - TEST</h2>
         {html_table}
     </div>
 </body>
