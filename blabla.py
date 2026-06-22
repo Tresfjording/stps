@@ -12,11 +12,11 @@ df = df.rename(columns={df.columns[0]: "Navn"})
 df = df.dropna(subset=["Totalt"])
 
 # 2. Generate your chart with matplotlib.pyplot
-fig, ax = plt.subplots(figsize=(7, 4))
-ax.bar(df.iloc[:, 0], df.iloc[:, 15], color="#175c5f", width=[0.5])
+fig, ax = plt.subplots(figsize=(9, 4))
+ax.bar(df.iloc[:, 0], df.iloc[:, 14], color="#175c5f", width=[0.5])
 ax.set_title("Årsresultat 2026/2027")
 ax.set_xlabel(df.columns[0])
-ax.set_ylabel(df.columns[15])
+ax.set_ylabel(df.columns[14])
 #ax.set_xlim(0, 10)
 
 plt.ylim(10000, 15000) # Set y-axis 
@@ -73,7 +73,7 @@ html_content = f"""<!DOCTYPE html>
 
 
         
-        <h2>TEST - Medlemmenes resultater fra 2026 vist i 2027 forslag drakt - TEST</h2>
+        <h2>TEST - Tippernes resultater fra 2026 vist i 2027 forslag drakt - TEST</h2>
         {html_table}
     </div>
 </body>
