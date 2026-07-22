@@ -444,7 +444,7 @@ def render_section(
             f"{int(round(float(value)))}",
             ha="center",
             va="bottom",
-            fontsize=9,
+            fontsize=7,
             color="#222222",
         )
 
@@ -658,7 +658,7 @@ else:
 html_content = render_report_html(
     REPORT_TEMPLATE_PATH,
     report_week,
-    report_pdf_filename,
+    latest_report_pdf_filename,
     pdf_ready_hint,
     report_updated_at,
     summary_section_html,
