@@ -35,6 +35,7 @@ WORKBOOK_FILE = "stps_tolk.xlsx"
 SHEET_NAME = "Hovedtabell"
 REPORT_TEMPLATE_PATH = Path("data") / "report_template.html"
 LOGO_FILENAME = "st_logo_hvit_bgr.png"
+LOGO_FILENAME_PATH = Path("data") / LOGO_FILENAME
 LOGO_ENV_VAR = "STPS_LOGO_PATH"
 SOURCE_CANDIDATES = [
     "stps_2026_RTM.xlsm",
