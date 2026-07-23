@@ -1021,7 +1021,7 @@ summary_df, summary_total_col = prepare_report_df(df)
 summary_section_html, _ = render_section(
     summary_df,
     summary_total_col,
-    f"Sammendrag - Uke {report_week} - Tippernes resultater 2026/2027",
+    f"Sammendrag - Tippernes resultater 2026/2027 - Uke {report_week}",
 )
 
 # --- 4) Build weekly section via fallback chain ---
