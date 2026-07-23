@@ -742,7 +742,7 @@ def render_section(
     bars = ax.bar(df_local["Navn"], df_local[total_col_local], color=bar_colors[: len(df_local)], width=0.6)
 
     legend_handles = []
-    if len(df_local) >= 1:
+    if len(df_local) >= 1: 
         legend_handles.append(Patch(facecolor="#d4af37", label="1. plass"))
     if len(df_local) >= 2:
         legend_handles.append(Patch(facecolor="#c0c0c0", label="2. plass"))
