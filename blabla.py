@@ -881,7 +881,7 @@ def build_weekly_section_html(source_workbook: str | None, report_week: int) -> 
             weekly_section_html, _ = render_section(
                 player_weekly_df,
                 "tp",
-                f"Sist uke - Uke {report_week} - Tippernes resultater",
+                f"Sist uke - Tippernes resultater - Uke {report_week}",
                 y_max=max(float(player_weekly_df["tp"].max()) + 200.0, 1000.0),
             )
             logger.info("Info: Bruker fallback-data fra spillerhistorikk-tabeller (f_*/t_*).")
