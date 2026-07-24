@@ -931,12 +931,14 @@ def refresh_excel_queries(filepath: str, timeout: int = 30) -> bool:
             time.sleep(0.5)
 
         try:
-            wb.Save()
+            # VIKTIG: Ikke lagre STPS 2026.xlsm - openpyxl korrupter det når Excel har modifisert det
+            # wb.Save()  # ❌ Disabled - causes file corruption
+            pass
         except Exception:
             pass
         wb.Close(SaveChanges=False)
         xl.Quit()
-        print("Refresh complete.")
+        print("Refresh complete (file not saved to avoid corruption).")
         return True
     except Exception as exc:
         print(f"Error refreshing Excel queries: {exc}")

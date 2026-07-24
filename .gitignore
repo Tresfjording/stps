@@ -1,2 +1,11 @@
 # ignore all .txt files
 *.txt
+
+# Excel-filer skal ikke i git - de kan bli korrupt av openpyxl og er store
+*.xlsm
+*.xlsx
+# Behold dashboard-output og tippelag-data
+!Dashboard.xlsx
+!tippelag.xlsx
+# Ignorer låsefiler
+~$*

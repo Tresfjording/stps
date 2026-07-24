@@ -15,7 +15,8 @@ from string import Template
 import warnings
 import re
 from datetime import datetime
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
+from openpyxl.chart import LineChart, Reference, BarChart
 from matplotlib.patches import Patch
 
 warnings.filterwarnings(
@@ -684,6 +685,264 @@ def load_weekly_matrix_from_header_range(file_path: str) -> pd.DataFrame | None:
         return None
     finally:
         wb.close()
+
+
+def build_tipper_dashboard_sheet(file_path: str, sheet_name: str = "Dashboard") -> pd.DataFrame:
+    """Create or update a dashboard sheet with weekly progression for all tippers.
+
+    The function scans workbook sheets that expose a table named like t_ahh, t_rb,
+    etc., reads the columns Dato, hp, up, bp and Totalt, and writes a flattened
+    table to a separate Dashboard.xlsm file (not modifying the source).
+    """
+    source_path = Path(file_path)
+    dashboard_path = Path("Dashboard.xlsx")
+    
+    # Read data from source file (need read_only=False to access tables)
+    wb_source = load_workbook(filename=str(source_path), data_only=True, read_only=False)
+    
+    # Create separate plain workbook for dashboard (no macros = no format issues)
+    wb_dashboard = Workbook()
+    wb_dashboard.remove(wb_dashboard.active)
+    
+    try:
+        ws_dashboard = wb_dashboard.create_sheet(title=sheet_name)
+        ws_dashboard.append(["Tipper", "Dato", "hp", "up", "bp", "Totalt"])
+
+        rows_out: list[dict[str, object]] = []
+        for ws in wb_source.worksheets:
+            if ws.title == sheet_name:
+                continue
+            if not ws.tables:
+                continue
+
+            for table_name, table in ws.tables.items():
+                table_lower = str(table_name).lower()
+                if not table_lower.startswith("t_"):
+                    continue
+
+                table_ref = table.ref if hasattr(table, "ref") else str(table)
+                values = [[cell.value for cell in row] for row in ws[table_ref]]
+                if not values:
+                    continue
+
+                header, *data = values
+                header = [str(c).replace("\xa0", " ").replace("\n", " ").strip() if c is not None else "" for c in header]
+                if not data:
+                    continue
+
+                df_local = pd.DataFrame(data, columns=header)
+                normalized_columns = {
+                    c: c for c in df_local.columns
+                }
+                for candidate in ["Dato", "dato", "Date", "date"]:
+                    if candidate in df_local.columns:
+                        normalized_columns[candidate] = "Dato"
+                for candidate in ["hp", "Hp"]:
+                    if candidate in df_local.columns:
+                        normalized_columns[candidate] = "hp"
+                for candidate in ["up", "Up"]:
+                    if candidate in df_local.columns:
+                        normalized_columns[candidate] = "up"
+                for candidate in ["bp", "Bp"]:
+                    if candidate in df_local.columns:
+                        normalized_columns[candidate] = "bp"
+                for candidate in ["Totalt", "totalt", "Total", "total", "tp", "TP"]:
+                    if candidate in df_local.columns:
+                        normalized_columns[candidate] = "Totalt"
+
+                df_local = df_local.rename(columns=normalized_columns)
+
+                selected_columns = [col for col in ["Dato", "hp", "up", "bp", "Totalt"] if col in df_local.columns]
+                if not selected_columns or "Dato" not in df_local.columns:
+                    continue
+
+                player_code = table_name.split("_", 1)[1] if "_" in table_name else ws.title
+                df_local = df_local[["Dato", *[col for col in selected_columns if col != "Dato"]]]
+                df_local = df_local.dropna(subset=["Dato"], how="all")
+                if df_local.empty:
+                    continue
+
+                def _coerce_numeric(col: str) -> pd.Series:
+                    return pd.to_numeric(df_local[col], errors="coerce")
+
+                for col in ["hp", "up", "bp", "Totalt"]:
+                    if col in df_local.columns:
+                        df_local[col] = _coerce_numeric(col)
+
+                for _, row in df_local.iterrows():
+                    rows_out.append(
+                        {
+                            "Tipper": str(player_code).upper(),
+                            "Dato": row.get("Dato"),
+                            "hp": row.get("hp"),
+                            "up": row.get("up"),
+                            "bp": row.get("bp"),
+                            "Totalt": row.get("Totalt"),
+                        }
+                    )
+
+        if rows_out:
+            out_df = pd.DataFrame(rows_out)
+            out_df = out_df.sort_values(by=["Tipper", "Dato"], ascending=[True, True]).reset_index(drop=True)
+            for row_idx, row in enumerate(out_df.itertuples(index=False), start=2):
+                ws_dashboard.append([row.Tipper, row.Dato, row.hp, row.up, row.bp, row.Totalt])
+            
+            _add_tipper_charts(wb_dashboard, ws_dashboard, out_df)
+            
+            # Save to separate Dashboard.xlsx file (does not corrupt source)
+            wb_dashboard.save(str(dashboard_path))
+            return out_df
+
+        # Save empty dashboard
+        wb_dashboard.save(str(dashboard_path))
+        return pd.DataFrame(columns=["Tipper", "Dato", "hp", "up", "bp", "Totalt"])
+    finally:
+        wb_source.close()
+        wb_dashboard.close()
+
+
+
+
+def _add_tipper_charts(wb_dashboard, ws_dashboard, out_df: pd.DataFrame) -> None:
+    """Create a 'Diagrammer' sheet with one matplotlib line chart image per tipper."""
+    import io
+    from openpyxl.drawing.image import Image as XLImage
+
+    ws_charts = wb_dashboard.create_sheet(title="Diagrammer")
+    tippers = sorted(out_df["Tipper"].unique())
+
+    img_width_px = 480
+    img_height_px = 300
+    # Each image is ~480px wide. At ~7px per Excel col unit and col width ~8.43: ~9 cols wide.
+    # At ~15px per Excel row: ~20 rows tall.
+    col_offsets = [1, 10]   # Column A and J
+    row_step = 20           # Rows per chart slot
+
+    for tidx, tipper in enumerate(tippers):
+        tipper_df = out_df[out_df["Tipper"] == tipper].sort_values("Dato").reset_index(drop=True)
+        totalt = pd.to_numeric(tipper_df["Totalt"], errors="coerce")
+        if totalt.dropna().empty:
+            continue
+
+        # Format x-axis labels
+        labels = [
+            d.strftime("%d.%m") if hasattr(d, "strftime") else str(d)
+            for d in tipper_df["Dato"]
+        ]
+
+        fig, ax = plt.subplots(figsize=(img_width_px / 96, img_height_px / 96))
+        ax.plot(range(len(totalt)), totalt.values, marker="o", markersize=4,
+                linewidth=2, color="#2563EB")
+        ax.set_title(tipper, fontsize=13, fontweight="bold", pad=8)
+        ax.set_ylabel("Totalt poeng", fontsize=9)
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=7)
+        ax.yaxis.grid(True, linestyle="--", alpha=0.5)
+        ax.set_axisbelow(True)
+        fig.tight_layout()
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=96)
+        plt.close(fig)
+        buf.seek(0)
+
+        img = XLImage(buf)
+        img.width = img_width_px
+        img.height = img_height_px
+
+        col_idx = tidx % 2
+        row_idx = tidx // 2
+        # Convert col index to letter (A=1, J=10)
+        col_letter = chr(ord("A") + col_offsets[col_idx] - 1)
+        row_anchor = row_idx * row_step + 1
+        ws_charts.add_image(img, f"{col_letter}{row_anchor}")
+
+
+def _add_dashboard_charts(wb, ws_dashboard, df: pd.DataFrame) -> None:
+    """Add visualization charts to the Dashboard sheet.
+    
+    Creates line charts showing tipper progression over time.
+    """
+    if df.empty or ws_dashboard.max_row < 3:
+        return
+    
+    try:
+        data_start_row = 2
+        data_end_row = ws_dashboard.max_row
+        
+        # Chart 1: Totalt points over time for all tippers
+        chart_totalt = LineChart()
+        chart_totalt.title = "Sesongprogresjon - Totalt Poeng"
+        chart_totalt.style = 12
+        chart_totalt.y_axis.title = "Poeng"
+        chart_totalt.x_axis.title = "Dato"
+        chart_totalt.height = 12
+        chart_totalt.width = 20
+        
+        # Get unique tippers
+        tippers = sorted(df["Tipper"].unique())
+        
+        col_date = 2  # Dato column
+        col_totalt = 6  # Totalt column
+        
+        for tipper in tippers:
+            tipper_rows = df[df["Tipper"] == tipper].index.tolist()
+            if not tipper_rows:
+                continue
+            
+            first_row = min(tipper_rows) + 2
+            last_row = max(tipper_rows) + 2
+            
+            values = Reference(ws_dashboard, min_col=col_totalt, min_row=first_row, max_row=last_row)
+            series = chart_totalt.add_data(values, titles_from_data=False)
+            if series:
+                series.title = tipper
+        
+        chart_totalt.set_categories(Reference(ws_dashboard, min_col=col_date, min_row=data_start_row, max_row=data_end_row))
+        ws_dashboard.add_chart(chart_totalt, "H2")
+        
+        # Chart 2: HP/UP/BP breakdown for most recent week
+        chart_breakdown = BarChart()
+        chart_breakdown.type = "col"
+        chart_breakdown.title = "Siste Uke - HP/UP/BP Fordeling"
+        chart_breakdown.style = 10
+        chart_breakdown.y_axis.title = "Poeng"
+        chart_breakdown.x_axis.title = "Tipper"
+        chart_breakdown.height = 10
+        chart_breakdown.width = 20
+        
+        latest_df = df.drop_duplicates(subset=["Tipper"], keep="last").sort_values("Tipper")
+        if not latest_df.empty:
+            chart_start_row = data_end_row + 3
+            chart_data_start = chart_start_row + 1
+            
+            ws_dashboard.cell(chart_start_row, 1).value = "Tipper"
+            ws_dashboard.cell(chart_start_row, 2).value = "HP"
+            ws_dashboard.cell(chart_start_row, 3).value = "UP"
+            ws_dashboard.cell(chart_start_row, 4).value = "BP"
+            
+            for row_offset, (_, row) in enumerate(latest_df.iterrows()):
+                ws_dashboard.cell(chart_data_start + row_offset, 1).value = row["Tipper"]
+                ws_dashboard.cell(chart_data_start + row_offset, 2).value = row.get("hp", 0) or 0
+                ws_dashboard.cell(chart_data_start + row_offset, 3).value = row.get("up", 0) or 0
+                ws_dashboard.cell(chart_data_start + row_offset, 4).value = row.get("bp", 0) or 0
+            
+            last_chart_row = chart_data_start + len(latest_df) - 1
+            categories = Reference(ws_dashboard, min_col=1, min_row=chart_data_start, max_row=last_chart_row)
+            hp_data = Reference(ws_dashboard, min_col=2, min_row=chart_start_row, max_row=last_chart_row)
+            up_data = Reference(ws_dashboard, min_col=3, min_row=chart_start_row, max_row=last_chart_row)
+            bp_data = Reference(ws_dashboard, min_col=4, min_row=chart_start_row, max_row=last_chart_row)
+            
+            chart_breakdown.add_data(hp_data, titles_from_data=True)
+            chart_breakdown.add_data(up_data, titles_from_data=True)
+            chart_breakdown.add_data(bp_data, titles_from_data=True)
+            chart_breakdown.set_categories(categories)
+            chart_breakdown.grouping = "stacked"
+            
+            ws_dashboard.add_chart(chart_breakdown, "H30")
+    except Exception as e:
+        logger.warning(f"Advarsel: Klarte ikke å legge til dashboard-diagrammer: {e}")
+
 
 
 def prepare_report_df(input_df: pd.DataFrame) -> tuple[pd.DataFrame, str]:
