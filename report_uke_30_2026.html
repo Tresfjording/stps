@@ -51,7 +51,7 @@
             <span class="pdf-status">PDF-eksport klar</span>
         </div>
         <p style="margin: 6px 0 10px 0; color: #555; font-size: 14px; text-align: right;">
-            Sist oppdatert: 23.07.2026 15:04:07
+            Sist oppdatert: 24.07.2026 13:54:21
         </p>
 
     <div class="chart-row">
@@ -468,6 +468,60 @@
   </tbody>
 </table>
     </div>
+    
+        </section>
+        <section class="report-section">
+            
+    <div class="player-history-panel" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #d7d7d7;">
+        <h2>Velg tipper og se historikk</h2>
+        <label for="player-history-select" style="font-weight: 600; display: block; margin-bottom: 8px;">Tipper</label>
+        <select id="player-history-select" style="padding: 8px 10px; min-width: 240px; border: 1px solid #175c5f; border-radius: 6px;">
+            <option value="AHH">AHH</option><option value="EB">EB</option><option value="JH">JH</option><option value="KAF">KAF</option><option value="LEV">LEV</option><option value="RB">RB</option><option value="TOH">TOH</option><option value="UTG">UTG</option><option value="ØG">ØG</option>
+        </select>
+        <div id="player-history-output" style="margin-top: 14px;"></div>
+    </div>
+    <script>
+        const playerHistoryData = {"AHH": [{"week": 30, "year": 2026, "plass": 2, "totalt": 570.0, "navn": "AHH"}], "EB": [{"week": 30, "year": 2026, "plass": 3, "totalt": 570.0, "navn": "EB"}], "JH": [{"week": 30, "year": 2026, "plass": 1, "totalt": 640.0, "navn": "JH"}], "KAF": [{"week": 30, "year": 2026, "plass": 4, "totalt": 570.0, "navn": "KAF"}], "LEV": [{"week": 30, "year": 2026, "plass": 7, "totalt": 530.0, "navn": "LEV"}], "RB": [{"week": 30, "year": 2026, "plass": 5, "totalt": 570.0, "navn": "RB"}], "TOH": [{"week": 30, "year": 2026, "plass": 6, "totalt": 570.0, "navn": "TOH"}], "UTG": [{"week": 30, "year": 2026, "plass": 8, "totalt": 479.0, "navn": "UTG"}], "ØG": [{"week": 30, "year": 2026, "plass": 9, "totalt": 470.0, "navn": "ØG"}]};
+        const historySelect = document.getElementById('player-history-select');
+        const historyOutput = document.getElementById('player-history-output');
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function renderPlayerHistory(playerName) {
+            const rows = playerHistoryData[playerName] || [];
+            if (!rows.length) {
+                historyOutput.innerHTML = '<p style="color:#555;">Ingen historikk funnet for denne tipperen.</p>';
+                return;
+            }
+
+            const tableRows = rows.map((row) => {
+                const weekLabel = row.week ?? '-';
+                const placeLabel = row.plass ?? '-';
+                const totalLabel = Number(row.totalt ?? 0).toLocaleString('nb-NO');
+                return `<tr><td>${escapeHtml(weekLabel)}</td><td>${escapeHtml(placeLabel)}</td><td>${escapeHtml(totalLabel)}</td></tr>`;
+            }).join('');
+
+            historyOutput.innerHTML = `
+                <h3 style="margin-bottom: 8px;">${escapeHtml(playerName)}</h3>
+                <div class="table-wrap">
+                    <table class="styled-table" style="margin-top: 0;">
+                        <thead><tr><th>Uke</th><th>Plass</th><th>Totalt</th></tr></thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        if (historySelect && historyOutput) {
+            historySelect.addEventListener('change', (event) => renderPlayerHistory(event.target.value));
+            renderPlayerHistory(historySelect.value || historySelect.options[0]?.value);
+        }
+    </script>
     
         </section>
     </div>

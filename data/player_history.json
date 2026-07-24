@@ -1,0 +1,85 @@
+{
+  "players": {
+    "AHH": [
+      {
+        "week": 30,
+        "year": 2026,
+        "plass": 2,
+        "totalt": 570.0,
+        "navn": "AHH"
+      }
+    ],
+    "EB": [
+      {
+        "week": 30,
+        "year": 2026,
+        "plass": 3,
+        "totalt": 570.0,
+        "navn": "EB"
+      }
+    ],
+    "JH": [
+      {
+        "week": 30,
+        "year": 2026,
+        "plass": 1,
+        "totalt": 640.0,
+        "navn": "JH"
+      }
+    ],
+    "KAF": [
+      {
+        "week": 30,
+        "year": 2026,
+        "plass": 4,
+        "totalt": 570.0,
+        "navn": "KAF"
+      }
+    ],
+    "LEV": [
+      {
+        "week": 30,
+        "year": 2026,
+        "plass": 7,
+        "totalt": 530.0,
+        "navn": "LEV"
+      }
+    ],
+    "RB": [
+      {
+        "week": 30,
+        "year": 2026,
+        "plass": 5,
+        "totalt": 570.0,
+        "navn": "RB"
+      }
+    ],
+    "TOH": [
+      {
+        "week": 30,
+        "year": 2026,
+        "plass": 6,
+        "totalt": 570.0,
+        "navn": "TOH"
+      }
+    ],
+    "UTG": [
+      {
+        "week": 30,
+        "year": 2026,
+        "plass": 8,
+        "totalt": 479.0,
+        "navn": "UTG"
+      }
+    ],
+    "ØG": [
+      {
+        "week": 30,
+        "year": 2026,
+        "plass": 9,
+        "totalt": 470.0,
+        "navn": "ØG"
+      }
+    ]
+  }
+}

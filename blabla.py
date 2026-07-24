@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import importlib.util
 import logging
+import json
+import html
 from pathlib import Path
 from string import Template
 import warnings
@@ -34,6 +36,7 @@ logger = logging.getLogger("stps_report")
 WORKBOOK_FILE = "stps_tolk.xlsx"
 SHEET_NAME = "Hovedtabell"
 REPORT_TEMPLATE_PATH = Path("data") / "report_template.html"
+PLAYER_HISTORY_FILE = Path("data") / "player_history.json"
 LOGO_FILENAME = "st_logo_hvit_bgr.png"
 LOGO_FILENAME_PATH = Path("data") / LOGO_FILENAME
 LOGO_ENV_VAR = "STPS_LOGO_PATH"
@@ -232,6 +235,7 @@ def render_report_html(
     report_updated_at: str,
     summary_section_html: str,
     weekly_section_html: str,
+    player_history_section_html: str,
 ) -> str:
     template = Template(template_path.read_text(encoding="utf-8"))
     return template.substitute(
@@ -244,6 +248,7 @@ def render_report_html(
         report_updated_at=report_updated_at,
         summary_section_html=summary_section_html,
         weekly_section_html=weekly_section_html,
+        player_history_section_html=player_history_section_html,
     )
 
 
@@ -809,13 +814,15 @@ def render_section(
     return section_html_local, img_base64_local
 
 
-def build_weekly_section_html(source_workbook: str | None, report_week: int) -> str:
+def build_weekly_section_html(source_workbook: str | None, report_week: int) -> tuple[str, pd.DataFrame | None, str | None]:
     """Build the weekly section using a prioritized fallback chain."""
     if source_workbook is None:
         return (
             "<p style='color:#555; text-align:left;'>"
             "Fant ingen kildefil for navngitt område 'Sist_uke'."
-            "</p>"
+            "</p>",
+            None,
+            None,
         )
 
     weekly_error = None
@@ -844,7 +851,7 @@ def build_weekly_section_html(source_workbook: str | None, report_week: int) -> 
             f"Sist uke - Uke {report_week} - Tippernes resultater",
             y_max=2000.0,
         )
-        return weekly_section_html
+        return weekly_section_html, weekly_df, weekly_total_col
 
     # 2) Secondary source: legacy workbook table used in some files.
     try:
@@ -857,7 +864,7 @@ def build_weekly_section_html(source_workbook: str | None, report_week: int) -> 
             y_max=2000.0,
         )
         logger.info("Info: Bruker ukesdata fra tabell 'Summasummarium5'.")
-        return weekly_section_html
+        return weekly_section_html, weekly_df, weekly_total_col
     except Exception as table_exc:
         # 3) Preferred fallback: look for the exact weekly matrix layout in workbook cells.
         weekly_matrix_df = load_weekly_matrix_from_header_range(source_workbook)
@@ -873,7 +880,7 @@ def build_weekly_section_html(source_workbook: str | None, report_week: int) -> 
                 y_max=max(float(pd.to_numeric(weekly_matrix_df[metric_col], errors='coerce').max()) + 200.0, 1000.0),
             )
             logger.info("Info: Bruker fallback-data fra ukematrise med Navn/hp/up/bp/straff/tp-kolonner.")
-            return weekly_section_html
+            return weekly_section_html, weekly_matrix_df, metric_col
 
         # 4) Fallback: reconstruct this week's table from player history tables.
         player_weekly_df = load_latest_weekly_from_player_tables(source_workbook)
@@ -885,7 +892,7 @@ def build_weekly_section_html(source_workbook: str | None, report_week: int) -> 
                 y_max=max(float(player_weekly_df["tp"].max()) + 200.0, 1000.0),
             )
             logger.info("Info: Bruker fallback-data fra spillerhistorikk-tabeller (f_*/t_*).")
-            return weekly_section_html
+            return weekly_section_html, player_weekly_df, "tp"
 
         # 5) Last fallback: winner counts only (reduced column set).
         winner_counts_df = load_weekly_winner_counts_from_named_range(source_workbook, "Ukevinnere")
@@ -897,7 +904,7 @@ def build_weekly_section_html(source_workbook: str | None, report_week: int) -> 
                 y_max=max(float(winner_counts_df["Totalt"].max()) + 1.0, 5.0),
             )
             logger.info("Info: Bruker fallback-data fra navngitt område 'Ukevinnere'.")
-            return weekly_section_html
+            return weekly_section_html, winner_counts_df, "Totalt"
 
         if weekly_error is not None:
             logger.warning(f"Advarsel: Klarte ikke å bygge seksjon for 'Sist_uke': {weekly_error}")
@@ -905,8 +912,189 @@ def build_weekly_section_html(source_workbook: str | None, report_week: int) -> 
         return (
             "<p style='color:#555; text-align:left;'>"
             "Fant ikke gyldige data for navngitt område 'Sist_uke'."
-            "</p>"
+            "</p>",
+            None,
+            None,
         )
+
+
+def build_player_history_entry(
+    report_week: int,
+    report_year: int,
+    weekly_df: pd.DataFrame | None,
+    total_col: str | None,
+) -> dict[str, object]:
+    if weekly_df is None or total_col is None or weekly_df.empty:
+        return {"week": report_week, "year": report_year, "rows": []}
+
+    rows: list[dict[str, object]] = []
+    for _, row in weekly_df.iterrows():
+        name = str(row.get("Navn", "")).strip()
+        if not name or name.lower() in {"", "none", "nan", "null"}:
+            continue
+        total_value = pd.to_numeric(row.get(total_col), errors="coerce")
+        rows.append(
+            {
+                "Navn": name,
+                "Totalt": float(total_value) if pd.notna(total_value) else 0.0,
+                "Plass": 0,
+            }
+        )
+
+    if not rows:
+        return {"week": report_week, "year": report_year, "rows": []}
+
+    rows.sort(key=lambda item: item["Totalt"], reverse=True)
+    for idx, row in enumerate(rows, start=1):
+        row["Plass"] = idx
+
+    return {"week": report_week, "year": report_year, "rows": rows}
+
+
+def normalize_player_name(player_name: str) -> str:
+    return re.sub(r"\s+", " ", str(player_name).strip().upper())
+
+
+def load_player_history(history_path: Path) -> dict[str, object]:
+    if not history_path.exists():
+        return {"players": {}}
+
+    try:
+        with history_path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+            if isinstance(data, dict):
+                return data
+    except Exception:
+        logger.warning(f"Advarsel: Klarte ikke å lese spillerhistorikk fra '{history_path}'.")
+
+    return {"players": {}}
+
+
+def update_player_history_archive(
+    history_path: Path,
+    report_week: int,
+    report_year: int,
+    weekly_df: pd.DataFrame | None,
+    total_col: str | None,
+) -> dict[str, object]:
+    history = load_player_history(history_path)
+    players = history.setdefault("players", {})
+    if not isinstance(players, dict):
+        players = {}
+        history["players"] = players
+
+    entry = build_player_history_entry(report_week, report_year, weekly_df, total_col)
+    if not entry.get("rows"):
+        return history
+
+    for row in entry["rows"]:
+        player_name = normalize_player_name(str(row.get("Navn", "")))
+        if not player_name:
+            continue
+
+        player_records = players.setdefault(player_name, [])
+        if not isinstance(player_records, list):
+            player_records = []
+            players[player_name] = player_records
+
+        already_exists = any(
+            record.get("week") == report_week and record.get("year") == report_year
+            for record in player_records
+        )
+        if already_exists:
+            continue
+
+        player_records.append(
+            {
+                "week": report_week,
+                "year": report_year,
+                "plass": row.get("Plass"),
+                "totalt": row.get("Totalt"),
+                "navn": str(row.get("Navn", "")),
+            }
+        )
+
+    for player_name, records in players.items():
+        if isinstance(records, list):
+            records.sort(key=lambda item: (item.get("year", 0), item.get("week", 0)))
+
+    history["players"] = {
+        player_name: players[player_name]
+        for player_name in sorted(players.keys(), key=lambda item: str(item))
+    }
+
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    with history_path.open("w", encoding="utf-8") as handle:
+        json.dump(history, handle, ensure_ascii=False, indent=2)
+
+    return history
+
+
+def build_player_history_section_html(history_path: Path) -> str:
+    history = load_player_history(history_path)
+    players = history.get("players", {})
+    if not isinstance(players, dict) or not players:
+        return "<p style='color:#555; text-align:left;'>Ingen spillerhistorikk er tilgjengelig ennå.</p>"
+
+    options = []
+    for player_name in sorted(players.keys(), key=lambda item: str(item)):
+        safe_name = html.escape(str(player_name))
+        options.append(f'<option value="{safe_name}">{safe_name}</option>')
+
+    player_data_json = json.dumps(players, ensure_ascii=False)
+
+    return f"""
+    <div class="player-history-panel" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #d7d7d7;">
+        <h2>Velg tipper og se historikk</h2>
+        <label for="player-history-select" style="font-weight: 600; display: block; margin-bottom: 8px;">Tipper</label>
+        <select id="player-history-select" style="padding: 8px 10px; min-width: 240px; border: 1px solid #175c5f; border-radius: 6px;">
+            {''.join(options)}
+        </select>
+        <div id="player-history-output" style="margin-top: 14px;"></div>
+    </div>
+    <script>
+        const playerHistoryData = {player_data_json};
+        const historySelect = document.getElementById('player-history-select');
+        const historyOutput = document.getElementById('player-history-output');
+
+        function escapeHtml(value) {{
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }}
+
+        function renderPlayerHistory(playerName) {{
+            const rows = playerHistoryData[playerName] || [];
+            if (!rows.length) {{
+                historyOutput.innerHTML = '<p style=\"color:#555;\">Ingen historikk funnet for denne tipperen.</p>';
+                return;
+            }}
+
+            const tableRows = rows.map((row) => {{
+                const weekLabel = row.week ?? '-';
+                const placeLabel = row.plass ?? '-';
+                const totalLabel = Number(row.totalt ?? 0).toLocaleString('nb-NO');
+                return `<tr><td>${{escapeHtml(weekLabel)}}</td><td>${{escapeHtml(placeLabel)}}</td><td>${{escapeHtml(totalLabel)}}</td></tr>`;
+            }}).join('');
+
+            historyOutput.innerHTML = `
+                <h3 style=\"margin-bottom: 8px;\">${{escapeHtml(playerName)}}</h3>
+                <div class=\"table-wrap\">
+                    <table class=\"styled-table\" style=\"margin-top: 0;\">
+                        <thead><tr><th>Uke</th><th>Plass</th><th>Totalt</th></tr></thead>
+                        <tbody>${{tableRows}}</tbody>
+                    </table>
+                </div>
+            `;
+        }}
+
+        if (historySelect && historyOutput) {{
+            historySelect.addEventListener('change', (event) => renderPlayerHistory(event.target.value));
+            renderPlayerHistory(historySelect.value || historySelect.options[0]?.value);
+        }}
+    </script>
+    """
 
 
 def export_html_to_pdf(html_path: str, pdf_path: str) -> None:
@@ -1026,7 +1214,15 @@ summary_section_html, _ = render_section(
 
 # --- 4) Build weekly section via fallback chain ---
 source_workbook = find_source_workbook()
-weekly_section_html = build_weekly_section_html(source_workbook, report_week)
+weekly_section_html, weekly_df, weekly_total_col = build_weekly_section_html(source_workbook, report_week)
+player_history_archive = update_player_history_archive(
+    PLAYER_HISTORY_FILE,
+    report_week,
+    report_year,
+    weekly_df,
+    weekly_total_col,
+)
+player_history_section_html = build_player_history_section_html(PLAYER_HISTORY_FILE)
 
 # --- 5) Render complete report HTML from template ---
 html_content = render_report_html(
@@ -1038,6 +1234,7 @@ html_content = render_report_html(
     report_updated_at,
     summary_section_html,
     weekly_section_html,
+    player_history_section_html,
 )
 
 # --- 6) Write HTML outputs and export PDF ---
