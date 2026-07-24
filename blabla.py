@@ -1042,59 +1042,130 @@ def build_player_history_section_html(history_path: Path) -> str:
         options.append(f'<option value="{safe_name}">{safe_name}</option>')
 
     player_data_json = json.dumps(players, ensure_ascii=False)
+    options_html = "".join(options)
 
-    return f"""
+    return """
     <div class="player-history-panel" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #d7d7d7;">
         <h2>Velg tipper og se historikk</h2>
         <label for="player-history-select" style="font-weight: 600; display: block; margin-bottom: 8px;">Tipper</label>
         <select id="player-history-select" style="padding: 8px 10px; min-width: 240px; border: 1px solid #175c5f; border-radius: 6px;">
-            {''.join(options)}
+            %s
         </select>
         <div id="player-history-output" style="margin-top: 14px;"></div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script>
-        const playerHistoryData = {player_data_json};
+        const playerHistoryData = %s;
         const historySelect = document.getElementById('player-history-select');
         const historyOutput = document.getElementById('player-history-output');
 
-        function escapeHtml(value) {{
+        function escapeHtml(value) {
             return String(value)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
-        }}
+        }
 
-        function renderPlayerHistory(playerName) {{
+        function renderPlayerHistory(playerName) {
             const rows = playerHistoryData[playerName] || [];
-            if (!rows.length) {{
+            if (!rows.length) {
                 historyOutput.innerHTML = '<p style=\"color:#555;\">Ingen historikk funnet for denne tipperen.</p>';
                 return;
-            }}
+            }
 
-            const tableRows = rows.map((row) => {{
+            const sortedRows = [...rows].sort((a, b) => (a.week ?? 0) - (b.week ?? 0));
+            const tableRows = sortedRows.map((row) => {
                 const weekLabel = row.week ?? '-';
                 const placeLabel = row.plass ?? '-';
                 const totalLabel = Number(row.totalt ?? 0).toLocaleString('nb-NO');
-                return `<tr><td>${{escapeHtml(weekLabel)}}</td><td>${{escapeHtml(placeLabel)}}</td><td>${{escapeHtml(totalLabel)}}</td></tr>`;
-            }}).join('');
+                return `<tr><td>${escapeHtml(weekLabel)}</td><td>${escapeHtml(placeLabel)}</td><td>${escapeHtml(totalLabel)}</td></tr>`;
+            }).join('');
+
+            const weeks = sortedRows.map((row) => `Uke ${row.week ?? '-'}`);
+            const ranks = sortedRows.map((row) => Number(row.plass ?? 0));
+            const totals = sortedRows.map((row) => Number(row.totalt ?? 0));
 
             historyOutput.innerHTML = `
-                <h3 style=\"margin-bottom: 8px;\">${{escapeHtml(playerName)}}</h3>
-                <div class=\"table-wrap\">
+                <h3 style=\"margin-bottom: 8px;\">${escapeHtml(playerName)}</h3>
+                <div style=\"display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 12px;\">
+                    <div style=\"background: #f8f8f8; padding: 10px; border-radius: 8px;\">
+                        <canvas id=\"rank-chart\" height=\"220\"></canvas>
+                    </div>
+                    <div style=\"background: #f8f8f8; padding: 10px; border-radius: 8px;\">
+                        <canvas id=\"points-chart\" height=\"220\"></canvas>
+                    </div>
+                </div>
+                <div class=\"table-wrap\" style=\"margin-top: 14px;\">
                     <table class=\"styled-table\" style=\"margin-top: 0;\">
                         <thead><tr><th>Uke</th><th>Plass</th><th>Totalt</th></tr></thead>
-                        <tbody>${{tableRows}}</tbody>
+                        <tbody>${tableRows}</tbody>
                     </table>
                 </div>
             `;
-        }}
 
-        if (historySelect && historyOutput) {{
+            setTimeout(() => {
+                const rankCtx = document.getElementById('rank-chart');
+                const pointsCtx = document.getElementById('points-chart');
+
+                if (rankCtx) {
+                    new Chart(rankCtx, {
+                        type: 'line',
+                        data: {
+                            labels: weeks,
+                            datasets: [{
+                                label: 'Plassering',
+                                data: ranks,
+                                borderColor: '#175c5f',
+                                backgroundColor: 'rgba(23, 92, 95, 0.2)',
+                                fill: true,
+                                tension: 0.25
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: {
+                                    reverse: true,
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1 }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (pointsCtx) {
+                    new Chart(pointsCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: weeks,
+                            datasets: [{
+                                label: 'Poeng',
+                                data: totals,
+                                backgroundColor: '#d4af37',
+                                borderColor: '#b8910f',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }, 0);
+        }
+
+        if (historySelect && historyOutput) {
             historySelect.addEventListener('change', (event) => renderPlayerHistory(event.target.value));
             renderPlayerHistory(historySelect.value || historySelect.options[0]?.value);
-        }}
+        }
     </script>
-    """
+    """ % (options_html, player_data_json)
 
 
 def export_html_to_pdf(html_path: str, pdf_path: str) -> None:
